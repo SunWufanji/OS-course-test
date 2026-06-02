@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-ProcessOsApplication<process-os>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.processos.ProcessOsApplication",
+            "projectName": "process-os",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

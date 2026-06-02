@@ -1,0 +1,13 @@
+com\processos\sync\Mutex.class
+com\processos\ProcessOsApplication.class
+com\processos\service\ProcessService.class
+com\processos\sync\MessageQueue.class
+com\processos\scheduler\Scheduler.class
+com\processos\controller\ProcessController.class
+com\processos\scheduler\RoundRobinScheduler.class
+com\processos\scheduler\SJFScheduler.class
+com\processos\model\ProcessControlBlock.class
+com\processos\scheduler\FCFSScheduler.class
+com\processos\sync\Semaphore.class
+com\processos\model\ProcessState.class
+com\processos\scheduler\PriorityScheduler.class
