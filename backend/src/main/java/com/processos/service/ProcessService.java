@@ -228,7 +228,8 @@ public class ProcessService {
                 timeUsed++;
                 int currentTimeQuantum = mfq.getCurrentTimeQuantum();
 
-                // 执行一个时间单位
+                // 执行一个时间单位（安全检查）
+                if (runningProcess.getRemainingTime() > 0) {
                 runningProcess.setRemainingTime(runningProcess.getRemainingTime() - 1);
 
                 if (runningProcess.getRemainingTime() == 0) {
@@ -255,6 +256,7 @@ public class ProcessService {
                     return result;
                 }
                 return result; // MFQ直接返回，不执行后面的逻辑
+                } // end if remainingTime > 0
             }
 
             // 其他算法的处理
