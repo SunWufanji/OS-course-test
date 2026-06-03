@@ -142,7 +142,16 @@ function App() {
         onLaunchApp={launchApp}
         onReset={resetSandbox}
         onToggleControlCenter={() => setControlCenterOpen(!controlCenterOpen)}
-        onToggleLauncher={() => setLauncherOpen(!launcherOpen)} />
+        onToggleLauncher={() => setLauncherOpen(!launcherOpen)}
+        toggleWindow={(title) => {
+          const win = windows.find(w => w.title.includes(title))
+          if (win) {
+            if (win.minimized) activateWindow(win.id)
+            else minimizeWindow(win.id)
+          } else {
+            openWindow(title)
+          }
+        }} />
 
       <ControlCenter isOpen={controlCenterOpen} onClose={() => setControlCenterOpen(false)} systemStatus={systemStatus}
         onOpenTaskManager={() => openWindow('任务管理器')} />

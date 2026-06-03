@@ -20,7 +20,7 @@ const DOCK_APPS = [
   { name: '系统更新', icon: '🔄', app: '系统更新' },
 ]
 
-function TaskBar({ windows, activeWindowId, systemStatus, onActivateWindow, onOpenTaskManager, onOpenKernelLab, onOpenSystemLog, onLaunchApp, onReset, onToggleControlCenter, onToggleLauncher }) {
+function TaskBar({ windows, activeWindowId, systemStatus, onActivateWindow, onOpenTaskManager, onOpenKernelLab, onOpenSystemLog, onLaunchApp, onReset, onToggleControlCenter, onToggleLauncher, toggleWindow }) {
   const [time, setTime] = useState(new Date())
   const [showMenu, setShowMenu] = useState(false)
 
@@ -30,9 +30,7 @@ function TaskBar({ windows, activeWindowId, systemStatus, onActivateWindow, onOp
   }, [])
 
   const handleDockClick = (item) => {
-    if (item.action === 'taskManager') onOpenTaskManager()
-    else if (item.action === 'systemLog') onOpenSystemLog()
-    else if (item.action === 'kernelLab') onOpenKernelLab()
+    if (item.action) toggleWindow(item.name)
     else if (item.app) onLaunchApp(item.app)
   }
 
