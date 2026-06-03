@@ -767,200 +767,60 @@ html, body, #root {
 .desktop-icon:hover .desktop-icon-img { transform: scale(1.12) translateY(-3px); filter: drop-shadow(0 4px 12px rgba(99,102,241,0.4)); }
 .desktop-icon-label { font-size: 11px; color: #e4e4e7; text-align: center; text-shadow: 0 1px 4px rgba(0,0,0,0.6); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ========== 开发者工作台布局 ========== */
-.desktop-workbench {
-  position: absolute; inset: 0; bottom: 48px;
+/* ========== macOS 风格桌面 ========== */
+.desktop-mac {
+  position: absolute; inset: 0; bottom: 56px;
   background-color: #030812;
   background-image:
     radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),
     radial-gradient(at 100% 0%, hsla(225,39%,30%,1) 0, transparent 50%),
     radial-gradient(at 0% 100%, hsla(339,49%,30%,1) 0, transparent 50%),
     radial-gradient(at 80% 50%, hsla(180,60%,15%,1) 0, transparent 40%);
-  display: flex; overflow: hidden;
+  display: flex; padding: 20px 32px;
 }
 
-/* 左侧边栏 */
-.sidebar {
-  width: 220px; flex-shrink: 0;
-  background: rgba(6,10,18,0.7); backdrop-filter: blur(16px);
-  border-right: 1px solid rgba(255,255,255,0.06);
-  display: flex; flex-direction: column; padding: 16px 0;
+/* 左侧纵向图标网格 */
+.mac-icons-grid {
+  display: grid;
+  grid-template-rows: repeat(auto-fill, 90px);
+  grid-auto-flow: column;
+  grid-auto-columns: 88px;
+  gap: 12px;
+  align-content: start;
+  flex-shrink: 0;
 }
-.sidebar-logo {
-  display: flex; align-items: center; gap: 8px;
-  padding: 0 16px; margin-bottom: 20px;
+.mac-desktop-icon {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; padding: 10px 6px; border-radius: 10px; cursor: pointer;
+  transition: all 0.2s; user-select: none;
 }
-.sidebar-logo-text { font-size: 16px; font-weight: 700; color: #e0f0ff; }
-.sidebar-badge {
-  font-size: 9px; padding: 2px 6px; border-radius: 4px;
-  background: rgba(0,240,255,0.1); color: #00f0ff; letter-spacing: 0.5px;
+.mac-desktop-icon:hover { background: rgba(255,255,255,0.08); }
+.mac-desktop-icon:active { transform: scale(0.92); }
+.mac-icon-img { font-size: 36px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); transition: transform 0.2s; }
+.mac-desktop-icon:hover .mac-icon-img { transform: scale(1.1) translateY(-2px); }
+.mac-icon-label { font-size: 11px; color: rgba(255,255,255,0.85); text-align: center; text-shadow: 0 1px 4px rgba(0,0,0,0.6); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 右侧小部件区域 */
+.mac-widgets {
+  margin-left: auto; display: flex; flex-direction: column; gap: 20px;
+  align-items: flex-end; justify-content: center; padding-right: 20px;
 }
 
-.sidebar-nav { display: flex; flex-direction: column; gap: 2px; padding: 0 8px; margin-bottom: 16px; }
-.sidebar-nav-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 12px; border-radius: 8px; cursor: pointer;
-  color: rgba(255,255,255,0.5); font-size: 13px; transition: all 0.15s;
-}
-.sidebar-nav-item:hover { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.8); }
-.sidebar-nav-item.active { background: rgba(0,240,255,0.08); color: #00f0ff; }
-.sidebar-nav-icon { font-size: 16px; width: 20px; text-align: center; }
-
-.sidebar-section { padding: 0 8px; margin-bottom: 16px; }
-.sidebar-section-title {
-  font-size: 9px; color: rgba(255,255,255,0.2); letter-spacing: 2px;
-  text-transform: uppercase; padding: 4px 12px; margin-bottom: 4px;
-}
-
-.sidebar-status {
-  margin-top: auto; padding: 12px 16px;
-  background: rgba(255,255,255,0.02); border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.04); margin: 0 8px;
-}
-.sidebar-status-title { font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 1px; margin-bottom: 10px; }
-.status-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.status-row:last-child { margin-bottom: 0; }
-.status-label { font-size: 11px; color: rgba(255,255,255,0.4); width: 28px; }
-.status-bar-track { flex: 1; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
-.status-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
-.status-value { font-size: 11px; width: 32px; text-align: right; font-variant-numeric: tabular-nums; }
-
-.sidebar-footer { padding: 12px 16px 0; text-align: left; }
-
-/* 右侧主内容区 */
-.main-content-area {
-  flex: 1; overflow-y: auto; padding: 20px 32px;
-}
-.main-content-area::-webkit-scrollbar { width: 4px; }
-.main-content-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
-
-/* 顶部栏 */
-.top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
-.search-box {
-  display: flex; align-items: center; gap: 8px;
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 10px; padding: 8px 14px; flex: 1; max-width: 400px;
-}
-.search-icon { font-size: 14px; color: rgba(255,255,255,0.3); }
-.search-input { background: none; border: none; outline: none; color: #e0f0ff; font-size: 13px; flex: 1; }
-.search-input::placeholder { color: rgba(255,255,255,0.25); }
-.search-kbd {
-  font-size: 10px; padding: 2px 6px; border-radius: 4px;
-  background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.3);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-.top-bar-actions { display: flex; align-items: center; gap: 8px; }
-.top-bar-icon {
-  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-  border-radius: 8px; cursor: pointer; font-size: 16px; transition: background 0.15s;
-}
-.top-bar-icon:hover { background: rgba(255,255,255,0.06); }
-.top-bar-avatar {
-  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-  border-radius: 50%; background: rgba(0,240,255,0.1); font-size: 18px; cursor: pointer;
-  border: 1px solid rgba(0,240,255,0.2);
-}
-
-/* 欢迎区域 */
-.welcome-section {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  margin-bottom: 32px; padding: 20px 24px; border-radius: 12px;
-  background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04);
-}
-.welcome-title { font-size: 28px; font-weight: 700; color: #e0f0ff; margin-bottom: 6px; }
-.welcome-subtitle { font-size: 13px; color: rgba(255,255,255,0.35); margin-bottom: 16px; }
-.quick-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-.quick-action-btn {
-  display: flex; align-items: center; gap: 6px;
-  padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.6);
-  font-size: 12px; cursor: pointer; transition: all 0.15s;
-}
-.quick-action-btn:hover { background: rgba(0,240,255,0.08); border-color: rgba(0,240,255,0.2); color: #00f0ff; }
-
-.welcome-clock { text-align: right; flex-shrink: 0; }
-.clock-time {
-  font-size: 56px; font-weight: 200; color: rgba(255,255,255,0.85);
+/* 大时钟 */
+.mac-clock-widget { text-align: right; }
+.mac-clock-time {
+  font-size: 64px; font-weight: 200; color: rgba(255,255,255,0.85);
   line-height: 1; letter-spacing: 2px; font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 30px rgba(255,255,255,0.08);
+  text-shadow: 0 0 40px rgba(255,255,255,0.08);
 }
-.clock-date { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 6px; }
+.mac-clock-date { font-size: 13px; color: rgba(255,255,255,0.3); margin-top: 8px; letter-spacing: 1px; }
 
-/* 通用区块 */
-.section { margin-bottom: 28px; }
-.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-.section-title { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.8); }
-.view-all-btn {
-  background: none; border: none; color: rgba(0,240,255,0.5); font-size: 12px;
-  cursor: pointer; transition: color 0.15s;
-}
-.view-all-btn:hover { color: #00f0ff; }
-
-/* 快速访问 */
-.quick-access-grid { display: flex; gap: 12px; flex-wrap: wrap; }
-.quick-access-item {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  padding: 16px 20px; border-radius: 12px;
-  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
-  cursor: pointer; transition: all 0.2s; min-width: 80px;
-}
-.quick-access-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); transform: translateY(-2px); }
-.quick-access-icon { font-size: 28px; }
-.quick-access-label { font-size: 11px; color: rgba(255,255,255,0.5); }
-.quick-access-item.add-app { border-style: dashed; opacity: 0.5; }
-.quick-access-item.add-app:hover { opacity: 1; }
-
-/* 应用分组 */
-.app-groups-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.app-group-card {
-  background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
-  border-radius: 12px; padding: 14px; transition: border-color 0.2s;
-}
-.app-group-card:hover { border-color: rgba(255,255,255,0.1); }
-.app-group-header { margin-bottom: 12px; }
-.app-group-title-row { display: flex; align-items: center; gap: 10px; }
-.app-group-icon-lg { font-size: 20px; }
-.app-group-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.8); }
-.app-group-count { font-size: 11px; color: rgba(255,255,255,0.3); }
-.app-group-items { display: flex; gap: 8px; flex-wrap: wrap; }
-.app-group-item {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 8px; border-radius: 6px; cursor: pointer; transition: background 0.15s; min-width: 56px;
-}
-.app-group-item:hover { background: rgba(255,255,255,0.06); }
-.app-group-icon { font-size: 22px; }
-.app-group-label { font-size: 9px; color: rgba(255,255,255,0.4); text-align: center; max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* 最近使用 */
-.recent-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.recent-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 14px; border-radius: 10px;
-  background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04);
-  cursor: pointer; transition: all 0.15s;
-}
-.recent-item:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); }
-.recent-icon { font-size: 20px; flex-shrink: 0; }
-.recent-info { min-width: 0; }
-.recent-name { font-size: 12px; color: rgba(255,255,255,0.7); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.recent-time { font-size: 10px; color: rgba(255,255,255,0.25); margin-top: 2px; }
-
-/* 顶部系统工具栏 */
-.top-system-bar {
-  display: flex; align-items: center; gap: 16px;
-  padding: 10px 48px; border-bottom: 1px solid rgba(255,255,255,0.05);
-  background: rgba(0,0,0,0.15);
-}
-.top-system-item {
-  display: flex; align-items: center; gap: 6px;
-  padding: 6px 12px; border-radius: 8px; cursor: pointer;
-  color: rgba(255,255,255,0.5); font-size: 12px; transition: all 0.15s;
-}
-.top-system-item:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8); }
-.top-system-label { font-size: 12px; }
-.top-system-time {
-  font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.7);
-  font-variant-numeric: tabular-nums;
+/* 硬件监控小部件 */
+.mac-hw-widget {
+  display: flex; gap: 16px;
+  background: rgba(255,255,255,0.04); backdrop-filter: blur(12px);
+  border-radius: 12px; padding: 16px 20px;
+  border: 1px solid rgba(255,255,255,0.06);
 }
 
 /* 窗口 */
@@ -982,19 +842,73 @@ html, body, #root {
 .window-btn.close:hover { background: rgba(239,68,68,0.8); color: white; }
 .window-content { flex: 1; overflow: hidden; min-height: 0; }
 
-/* 任务栏 */
-.taskbar {
-  position: absolute; bottom: 0; left: 0; right: 0; height: 48px;
-  background: rgba(15,15,22,0.75); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-  border-top: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; padding: 0 8px; z-index: 1000;
+/* macOS Dock 风格任务栏 */
+.dock-bar {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  height: 52px; display: flex; align-items: center; gap: 10px;
+  background: rgba(15,15,22,0.65); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;
+  padding: 0 12px; z-index: 1000;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
 }
-.taskbar-start { width: 40px; height: 36px; border: none; background: transparent; color: var(--text-0); border-radius: 6px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
-.taskbar-start:hover { background: rgba(255,255,255,0.08); }
-.taskbar-apps { flex: 1; display: flex; align-items: center; gap: 4px; padding: 0 12px; overflow-x: auto; }
-.taskbar-app { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border: none; background: transparent; color: var(--text-2); border-radius: 6px; cursor: pointer; font-size: 12px; white-space: nowrap; transition: all 0.15s; height: 32px; }
-.taskbar-app:hover { background: rgba(255,255,255,0.08); color: var(--text-0); }
-.taskbar-app.active { background: rgba(99,102,241,0.15); color: var(--accent); border-bottom: 2px solid var(--accent); }
-.taskbar-app-title { max-width: 100px; overflow: hidden; text-overflow: ellipsis; }
+.dock-start {
+  width: 36px; height: 36px; border: none; background: transparent; border-radius: 8px;
+  cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.dock-start:hover { background: rgba(255,255,255,0.1); }
+
+/* 开始菜单 */
+.dock-start-menu {
+  position: absolute; bottom: 60px; left: 12px; width: 200px;
+  background: rgba(20,20,28,0.85); backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.5); z-index: 1001; overflow: hidden;
+}
+.dock-menu-header { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.dock-menu-items { padding: 6px; }
+.dock-menu-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border-radius: 6px; cursor: pointer; color: rgba(255,255,255,0.6);
+  font-size: 12px; transition: all 0.15s;
+}
+.dock-menu-item:hover { background: rgba(255,255,255,0.06); color: #e0f0ff; }
+.dock-menu-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 8px; }
+
+/* Dock 应用图标 */
+.dock-apps {
+  display: flex; align-items: center; gap: 6px; padding: 0 8px;
+}
+.dock-app {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; transition: all 0.2s; padding: 4px 6px; border-radius: 8px;
+}
+.dock-app:hover { transform: scale(1.15) translateY(-4px); }
+.dock-app:active { transform: scale(1.05); }
+.dock-app-icon { font-size: 28px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+.dock-indicator {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(255,255,255,0.3); transition: all 0.3s;
+}
+.dock-app.active .dock-indicator {
+  background: #00f0ff; box-shadow: 0 0 6px #00f0ff;
+  animation: breathe 2s ease-in-out infinite;
+}
+
+/* 系统托盘 */
+.dock-tray {
+  display: flex; align-items: center; gap: 10px; padding: 0 8px;
+  border-left: 1px solid rgba(255,255,255,0.08); margin-left: 4px; padding-left: 12px;
+}
+.dock-tray-item { display: flex; align-items: center; gap: 5px; }
+.dock-tray-label { font-size: 9px; color: rgba(255,255,255,0.3); letter-spacing: 0.5px; }
+.dock-tray-bar { width: 40px; height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+.dock-tray-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+.dock-tray-fill.cpu { background: linear-gradient(90deg, #00f0ff, #3b82f6); }
+.dock-tray-fill.mem { background: linear-gradient(90deg, #ff2d7b, #ec4899); }
+.dock-tray-value { font-size: 10px; color: rgba(255,255,255,0.4); font-variant-numeric: tabular-nums; min-width: 28px; }
+.dock-tray-divider { width: 1px; height: 16px; background: rgba(255,255,255,0.06); }
+.dock-tray-clock { font-size: 11px; color: rgba(255,255,255,0.5); font-variant-numeric: tabular-nums; }
 
 /* 系统托盘 */
 .taskbar-tray { display: flex; align-items: center; gap: 12px; padding: 0 12px; height: 100%; }
