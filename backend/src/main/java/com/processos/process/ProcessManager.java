@@ -62,8 +62,8 @@ public class ProcessManager {
      * @return 第一个进程的 PID，-1 表示已运行，null 表示资源不足
      */
     public synchronized Object[] launchApp(SimulatedApp app) {
-        // 单实例检测
-        if (isAppRunning(app.name())) {
+        // 单实例检测（只有 singleInstance=true 的应用才检测）
+        if (app.isSingleInstance() && isAppRunning(app.name())) {
             ProcessControlBlock existing = processTable.stream()
                 .filter(p -> p.getAppType() != null && p.getAppType().equals(app.name())
                     && p.getState() != ProcessState.TERMINATED)
