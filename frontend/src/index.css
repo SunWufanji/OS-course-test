@@ -767,148 +767,118 @@ html, body, #root {
 .desktop-icon:hover .desktop-icon-img { transform: scale(1.12) translateY(-3px); filter: drop-shadow(0 4px 12px rgba(99,102,241,0.4)); }
 .desktop-icon-label { font-size: 11px; color: #e4e4e7; text-align: center; text-shadow: 0 1px 4px rgba(0,0,0,0.6); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ========== macOS 风格桌面 ========== */
+/* ========== macOS 极简桌面 ========== */
 .desktop-mac {
-  position: absolute; inset: 0; bottom: 56px;
+  position: absolute; inset: 0; bottom: 56px; top: 28px;
   background-color: #030812;
   background-image:
     radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),
     radial-gradient(at 100% 0%, hsla(225,39%,30%,1) 0, transparent 50%),
     radial-gradient(at 0% 100%, hsla(339,49%,30%,1) 0, transparent 50%),
     radial-gradient(at 80% 50%, hsla(180,60%,15%,1) 0, transparent 40%);
-  display: flex; padding: 20px 32px;
 }
 
-/* 左侧纵向图标网格 */
-.mac-icons-grid {
-  display: grid;
-  grid-template-rows: repeat(auto-fill, 90px);
-  grid-auto-flow: column;
-  grid-auto-columns: 88px;
-  gap: 12px;
-  align-content: start;
-  flex-shrink: 0;
-}
-.mac-desktop-icon {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 6px; padding: 10px 6px; border-radius: 10px; cursor: pointer;
-  transition: all 0.2s; user-select: none;
-}
-.mac-desktop-icon:hover { background: rgba(255,255,255,0.08); }
-.mac-desktop-icon:active { transform: scale(0.92); }
-.mac-icon-img { font-size: 36px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); transition: transform 0.2s; }
-.mac-desktop-icon:hover .mac-icon-img { transform: scale(1.1) translateY(-2px); }
-.mac-icon-label { font-size: 11px; color: rgba(255,255,255,0.85); text-align: center; text-shadow: 0 1px 4px rgba(0,0,0,0.6); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* 右侧小部件区域 */
-.mac-widgets {
-  margin-left: auto; display: flex; flex-direction: column; gap: 20px;
-  align-items: flex-end; justify-content: center; padding-right: 20px;
-}
-
-/* 大时钟 */
-.mac-clock-widget { text-align: right; }
-.mac-clock-time {
-  font-size: 64px; font-weight: 200; color: rgba(255,255,255,0.85);
-  line-height: 1; letter-spacing: 2px; font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 40px rgba(255,255,255,0.08);
-}
-.mac-clock-date { font-size: 13px; color: rgba(255,255,255,0.3); margin-top: 8px; letter-spacing: 1px; }
-
-/* 硬件监控小部件 */
-.mac-hw-widget {
-  display: flex; gap: 16px;
-  background: rgba(255,255,255,0.04); backdrop-filter: blur(12px);
-  border-radius: 12px; padding: 16px 20px;
-  border: 1px solid rgba(255,255,255,0.06);
-}
-
-/* 窗口 */
-.window {
-  position: absolute; background: rgba(20,20,28,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+/* ========== macOS 窗口（红绿灯） ========== */
+.mac-window {
+  position: absolute; background: rgba(20,20,28,0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
   display: flex; flex-direction: column; overflow: hidden; z-index: 100; min-width: 400px; min-height: 300px;
 }
-.window.active { box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.2); }
-.window-titlebar {
-  display: flex; align-items: center; justify-content: space-between; padding: 0 12px; height: 36px;
-  background: rgba(0,0,0,0.2); cursor: move; user-select: none; flex-shrink: 0;
+.mac-window.active { box-shadow: 0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.15); }
+.mac-window-titlebar {
+  display: flex; align-items: center; justify-content: space-between; padding: 0 12px; height: 38px;
+  background: rgba(0,0,0,0.15); cursor: move; user-select: none; flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
-.window-title { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: var(--text-1); }
-.window-icon { font-size: 14px; }
-.window-controls { display: flex; gap: 2px; }
-.window-btn { width: 28px; height: 24px; border: none; background: transparent; color: var(--text-2); border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
-.window-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-0); }
-.window-btn.close:hover { background: rgba(239,68,68,0.8); color: white; }
-.window-content { flex: 1; overflow: hidden; min-height: 0; }
+.mac-traffic-lights { display: flex; gap: 7px; }
+.mac-tl-btn { width: 12px; height: 12px; border-radius: 50%; border: none; cursor: pointer; transition: all 0.15s; }
+.mac-tl-btn.close { background: #ff5f56; }
+.mac-tl-btn.minimize { background: #ffbd2e; }
+.mac-tl-btn.maximize { background: #27c93f; }
+.mac-tl-btn:hover { filter: brightness(1.2); transform: scale(1.1); }
+.mac-tl-btn:active { transform: scale(0.9); }
+.mac-window-title { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.6); }
+.mac-window-content { flex: 1; overflow: hidden; min-height: 0; }
 
-/* macOS Dock 风格任务栏 */
-.dock-bar {
-  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
-  height: 52px; display: flex; align-items: center; gap: 10px;
-  background: rgba(15,15,22,0.65); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;
-  padding: 0 12px; z-index: 1000;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+/* ========== macOS 顶部菜单栏 ========== */
+.mac-menubar {
+  position: absolute; top: 0; left: 0; right: 0; height: 28px;
+  background: rgba(10,10,16,0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; z-index: 1000; user-select: none;
 }
-.dock-start {
-  width: 36px; height: 36px; border: none; background: transparent; border-radius: 8px;
-  cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s;
-}
-.dock-start:hover { background: rgba(255,255,255,0.1); }
+.menubar-left { display: flex; align-items: center; gap: 8px; }
+.menubar-logo { font-size: 16px; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: background 0.15s; }
+.menubar-logo:hover { background: rgba(255,255,255,0.08); }
+.menubar-brand { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8); }
+.menubar-right { cursor: pointer; padding: 2px 8px; border-radius: 4px; transition: background 0.15s; }
+.menubar-right:hover { background: rgba(255,255,255,0.08); }
+.menubar-time { font-size: 12px; color: rgba(255,255,255,0.7); font-variant-numeric: tabular-nums; }
 
 /* 开始菜单 */
-.dock-start-menu {
-  position: absolute; bottom: 60px; left: 12px; width: 200px;
+.mac-menu-overlay { position: fixed; inset: 0; z-index: 999; }
+.mac-start-menu {
+  position: absolute; top: 28px; left: 12px; width: 220px;
   background: rgba(20,20,28,0.85); backdrop-filter: blur(24px);
   border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
   box-shadow: 0 12px 48px rgba(0,0,0,0.5); z-index: 1001; overflow: hidden;
 }
-.dock-menu-header { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.dock-menu-items { padding: 6px; }
-.dock-menu-item {
+.mac-menu-header { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.7); }
+.mac-menu-items { padding: 6px; }
+.mac-menu-item {
   display: flex; align-items: center; gap: 10px; padding: 8px 12px;
   border-radius: 6px; cursor: pointer; color: rgba(255,255,255,0.6);
   font-size: 12px; transition: all 0.15s;
 }
-.dock-menu-item:hover { background: rgba(255,255,255,0.06); color: #e0f0ff; }
-.dock-menu-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 8px; }
+.mac-menu-item:hover { background: rgba(0,240,255,0.08); color: #e0f0ff; }
+.mac-menu-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 8px; }
 
-/* Dock 应用图标 */
-.dock-apps {
-  display: flex; align-items: center; gap: 6px; padding: 0 8px;
+/* ========== macOS Dock 栏 ========== */
+.mac-dock {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: flex-end; gap: 4px;
+  background: rgba(255,255,255,0.08); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 18px;
+  padding: 6px 10px; z-index: 1000;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
 }
-.dock-app {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  cursor: pointer; transition: all 0.2s; padding: 4px 6px; border-radius: 8px;
+.dock-icon {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  cursor: pointer; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 4px 4px 2px; position: relative;
 }
-.dock-app:hover { transform: scale(1.15) translateY(-4px); }
-.dock-app:active { transform: scale(1.05); }
-.dock-app-icon { font-size: 28px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-.dock-indicator {
+.dock-icon:hover { transform: scale(1.2) translateY(-8px); }
+.dock-icon:active { transform: scale(1.05); }
+.dock-icon-img { font-size: 32px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3)); transition: filter 0.2s; }
+.dock-icon:hover .dock-icon-img { filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)); }
+.dock-dot {
   width: 4px; height: 4px; border-radius: 50%;
-  background: rgba(255,255,255,0.3); transition: all 0.3s;
+  background: rgba(255,255,255,0.5); transition: all 0.3s;
 }
-.dock-app.active .dock-indicator {
-  background: #00f0ff; box-shadow: 0 0 6px #00f0ff;
-  animation: breathe 2s ease-in-out infinite;
-}
+.dock-icon:hover .dock-dot { background: #00f0ff; box-shadow: 0 0 6px #00f0ff; }
 
-/* 系统托盘 */
-.dock-tray {
-  display: flex; align-items: center; gap: 10px; padding: 0 8px;
-  border-left: 1px solid rgba(255,255,255,0.08); margin-left: 4px; padding-left: 12px;
+/* ========== 右侧控制中心 ========== */
+.cc-overlay { position: fixed; inset: 0; z-index: 998; }
+.cc-panel {
+  position: fixed; top: 28px; right: 0; bottom: 56px; width: 300px;
+  background: rgba(15,15,22,0.8); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+  border-left: 1px solid rgba(255,255,255,0.08);
+  padding: 20px; z-index: 999; overflow-y: auto;
+  animation: slideInRight 0.25s ease-out;
 }
-.dock-tray-item { display: flex; align-items: center; gap: 5px; }
-.dock-tray-label { font-size: 9px; color: rgba(255,255,255,0.3); letter-spacing: 0.5px; }
-.dock-tray-bar { width: 40px; height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
-.dock-tray-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
-.dock-tray-fill.cpu { background: linear-gradient(90deg, #00f0ff, #3b82f6); }
-.dock-tray-fill.mem { background: linear-gradient(90deg, #ff2d7b, #ec4899); }
-.dock-tray-value { font-size: 10px; color: rgba(255,255,255,0.4); font-variant-numeric: tabular-nums; min-width: 28px; }
-.dock-tray-divider { width: 1px; height: 16px; background: rgba(255,255,255,0.06); }
-.dock-tray-clock { font-size: 11px; color: rgba(255,255,255,0.5); font-variant-numeric: tabular-nums; }
+@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.cc-section { margin-bottom: 20px; }
+.cc-section-title {
+  font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 1.5px;
+  text-transform: uppercase; margin-bottom: 12px;
+}
+.cc-info-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.cc-info-label { font-size: 12px; color: rgba(255,255,255,0.5); }
+.cc-info-value { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
 /* 系统托盘 */
 .taskbar-tray { display: flex; align-items: center; gap: 12px; padding: 0 12px; height: 100%; }

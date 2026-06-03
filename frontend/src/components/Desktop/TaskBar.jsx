@@ -1,82 +1,94 @@
 import React, { useState, useEffect } from 'react'
 
-function TaskBar({ windows, activeWindowId, systemStatus, runningProcesses, onActivateWindow, onOpenTaskManager, onReset }) {
+// 所有 Dock 栏应用配置
+const DOCK_APPS = [
+  { name: '任务管理器', icon: '⚙️', action: 'taskManager' },
+  { name: '系统日志', icon: '📋', action: 'systemLog' },
+  { name: '内核算法实验室', icon: '🧪', action: 'kernelLab' },
+  { name: 'CS:GO', icon: '🎮', app: 'CS:GO' },
+  { name: 'Chrome', icon: '🌐', app: 'Chrome' },
+  { name: 'VSCode', icon: '💻', app: 'VSCode' },
+  { name: '记事本', icon: '📝', app: '记事本' },
+  { name: 'Word', icon: '📄', app: 'Word' },
+  { name: '终端', icon: '⬛', app: '终端' },
+]
+
+function TaskBar({ windows, activeWindowId, systemStatus, onActivateWindow, onOpenTaskManager, onOpenKernelLab, onOpenSystemLog, onLaunchApp, onReset, onToggleControlCenter }) {
   const [time, setTime] = useState(new Date())
-  const [showStartMenu, setShowStartMenu] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
 
-  const cpuUsage = systemStatus?.totalCpuUsage?.toFixed(0) || 0
-  const memUsed = systemStatus?.usedMemory || 0
-  const memTotal = systemStatus?.totalMemory || 16384
-  const memPercent = ((memUsed / memTotal) * 100).toFixed(0)
+  const handleDockClick = (item) => {
+    if (item.action === 'taskManager') onOpenTaskManager()
+    else if (item.action === 'systemLog') onOpenSystemLog()
+    else if (item.action === 'kernelLab') onOpenKernelLab()
+    else if (item.app) onLaunchApp(item.app)
+  }
+
+  const isRunning = (appName) => windows.some(w => w.title?.includes(appName) || w.icon === DOCK_APPS.find(d => d.app === appName)?.icon)
 
   return (
-    <div className="dock-bar">
-      {/* 开始按钮 */}
-      <button className="dock-start" onClick={() => setShowStartMenu(!showStartMenu)}>
-        <span style={{ fontSize: '16px' }}>🍎</span>
-      </button>
+    <>
+      {/* 顶部菜单栏 */}
+      <div className="mac-menubar">
+        <div className="menubar-left">
+          <div className="menubar-logo" onClick={() => setShowMenu(!showMenu)}>🍎</div>
+          <span className="menubar-brand">ProcessOS</span>
+        </div>
+        <div className="menubar-right" onClick={onToggleControlCenter}>
+          <span className="menubar-time">
+            {time.toLocaleDateString('zh-CN', { weekday: 'short', month: 'short', day: 'numeric' })}
+            {' '}
+            {time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      </div>
 
       {/* 开始菜单 */}
-      {showStartMenu && (
-        <div className="dock-start-menu">
-          <div className="dock-menu-header">
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#ededef' }}>ProcessOS</span>
-          </div>
-          <div className="dock-menu-items">
-            <div className="dock-menu-item" onClick={() => { onOpenTaskManager(); setShowStartMenu(false) }}>
+      {showMenu && (
+        <>
+          <div className="mac-menu-overlay" onClick={() => setShowMenu(false)} />
+          <div className="mac-start-menu">
+            <div className="mac-menu-header">ProcessOS Simulator</div>
+            <div className="mac-menu-item" onClick={() => { onOpenTaskManager(); setShowMenu(false) }}>
               <span>⚙️</span><span>任务管理器</span>
             </div>
-            <div className="dock-menu-divider" />
-            <div className="dock-menu-item" onClick={() => { onReset(); setShowStartMenu(false) }}>
+            <div className="mac-menu-item" onClick={() => { onOpenSystemLog(); setShowMenu(false) }}>
+              <span>📋</span><span>系统日志</span>
+            </div>
+            <div className="mac-menu-item" onClick={() => { onOpenKernelLab(); setShowMenu(false) }}>
+              <span>🧪</span><span>算法实验室</span>
+            </div>
+            <div className="mac-menu-divider" />
+            <div className="mac-menu-item" onClick={() => { onReset(); setShowMenu(false) }}>
               <span>🔄</span><span>重置系统</span>
             </div>
           </div>
-        </div>
+        </>
       )}
 
-      {/* 运行中的应用 — Dock 居中 */}
-      <div className="dock-apps">
-        {windows.map(win => (
-          <div
-            key={win.id}
-            className={`dock-app ${activeWindowId === win.id && !win.minimized ? 'active' : ''}`}
-            onClick={() => onActivateWindow(win.id)}
-            title={win.title}
-          >
-            <div className="dock-app-icon">{win.icon}</div>
-            {/* 运行指示灯 */}
-            <div className="dock-indicator" />
-          </div>
-        ))}
+      {/* 底部 Dock 栏 */}
+      <div className="mac-dock">
+        {DOCK_APPS.map(item => {
+          const running = isRunning(item.app || item.name)
+          return (
+            <div
+              key={item.name}
+              className="dock-icon"
+              title={item.name}
+              onClick={() => handleDockClick(item)}
+            >
+              <div className="dock-icon-img">{item.icon}</div>
+              {running && <div className="dock-dot" />}
+            </div>
+          )
+        })}
       </div>
-
-      {/* 系统托盘 */}
-      <div className="dock-tray">
-        <div className="dock-tray-item">
-          <span className="dock-tray-label">CPU</span>
-          <div className="dock-tray-bar">
-            <div className="dock-tray-fill cpu" style={{ width: `${cpuUsage}%` }} />
-          </div>
-          <span className="dock-tray-value">{cpuUsage}%</span>
-        </div>
-        <div className="dock-tray-item">
-          <span className="dock-tray-label">MEM</span>
-          <div className="dock-tray-bar">
-            <div className="dock-tray-fill mem" style={{ width: `${memPercent}%` }} />
-          </div>
-          <span className="dock-tray-value">{memPercent}%</span>
-        </div>
-        <div className="dock-tray-divider" />
-        <div className="dock-tray-clock">
-          {time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-        </div>
-      </div>
-    </div>
+    </>
   )
 }
 

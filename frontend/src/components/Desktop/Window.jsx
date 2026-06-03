@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 
 /**
- * 窗口组件 - 仿 Windows 窗口
+ * 窗口组件 — macOS 红绿灯风格
  */
 function Window({
   id, title, icon, children,
@@ -25,22 +25,15 @@ function Window({
     if (maximized) return
     onActivate()
     setIsDragging(true)
-    dragOffset.current = {
-      x: e.clientX - pos.x,
-      y: e.clientY - pos.y
-    }
+    dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }
   }
 
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (!isDragging) return
-      setPos({
-        x: Math.max(0, e.clientX - dragOffset.current.x),
-        y: Math.max(0, e.clientY - dragOffset.current.y)
-      })
+      setPos({ x: Math.max(0, e.clientX - dragOffset.current.x), y: Math.max(0, e.clientY - dragOffset.current.y) })
     }
     const handleMouseUp = () => setIsDragging(false)
-
     if (isDragging) {
       window.addEventListener('mousemove', handleMouseMove)
       window.addEventListener('mouseup', handleMouseUp)
@@ -52,38 +45,25 @@ function Window({
   }, [isDragging])
 
   const windowStyle = maximized
-    ? { left: 0, top: 0, width: '100%', height: 'calc(100% - 48px)', borderRadius: 0 }
+    ? { left: 0, top: 28, width: '100%', height: 'calc(100% - 84px)', borderRadius: 0 }
     : { left: pos.x, top: pos.y, width: size.width, height: size.height }
 
   return (
-    <div
-      className={`window ${isActive ? 'active' : ''}`}
-      style={windowStyle}
-      onMouseDown={onActivate}
-    >
-      {/* 标题栏 */}
-      <div
-        className="window-titlebar"
-        onMouseDown={handleMouseDown}
-        onDoubleClick={onMaximize}
-      >
-        <div className="window-title">
-          <span className="window-icon">{icon}</span>
+    <div className={`mac-window ${isActive ? 'active' : ''}`} style={windowStyle} onMouseDown={onActivate}>
+      {/* 标题栏 — 红绿灯在左上角 */}
+      <div className="mac-window-titlebar" onMouseDown={handleMouseDown} onDoubleClick={onMaximize}>
+        <div className="mac-traffic-lights">
+          <button className="mac-tl-btn close" onClick={(e) => { e.stopPropagation(); onClose() }} />
+          <button className="mac-tl-btn minimize" onClick={(e) => { e.stopPropagation(); onMinimize() }} />
+          <button className="mac-tl-btn maximize" onClick={(e) => { e.stopPropagation(); onMaximize() }} />
+        </div>
+        <div className="mac-window-title">
+          <span>{icon}</span>
           <span>{title}</span>
         </div>
-        <div className="window-controls">
-          <button className="window-btn minimize" onClick={onMinimize}>─</button>
-          <button className="window-btn maximize" onClick={onMaximize}>
-            {maximized ? '❐' : '☐'}
-          </button>
-          <button className="window-btn close" onClick={onClose}>✕</button>
-        </div>
+        <div style={{ width: 56 }} /> {/* 平衡红绿灯宽度 */}
       </div>
-
-      {/* 窗口内容 */}
-      <div className="window-content">
-        {children}
-      </div>
+      <div className="mac-window-content">{children}</div>
     </div>
   )
 }
