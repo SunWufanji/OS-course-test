@@ -412,23 +412,6 @@ function SchedulerLab() {
       {/* 甘特图 — 底部浮动面板，鼠标移到底部才显示 */}
       <GanttPanel ganttData={ganttData} currentTime={currentTime} stats={stats} currentAlgo={currentAlgo} mfqQueues={mfqQueues} processes={processes} runningProcess={runningProcess} />
     </div>
-
-          {/* 调度统计 */}
-          <div style={{padding:'12px 16px',borderTop:'1px solid var(--border)'}}>
-            <div className="stats-title">调度统计</div>
-            <div className="stats-grid">
-              <div className="stat-box"><div className="stat-value">{stats.avgTurnaround||'-'}</div><div className="stat-label">平均周转</div></div>
-              <div className="stat-box"><div className="stat-value">{stats.avgWaiting||'-'}</div><div className="stat-label">平均等待</div></div>
-              <div className="stat-box"><div className="stat-value">{stats.completed||0}</div><div className="stat-label">已完成</div></div>
-              <div className="stat-box"><div className="stat-value">{stats.cpuUsage||0}%</div><div className="stat-label">CPU</div></div>
-            </div>
-            {currentAlgo === 'MFQ' && (
-              <MFQPanel mfqQueues={mfqQueues} processes={processes} runningProcess={runningProcess} />
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
   )
 }
 
