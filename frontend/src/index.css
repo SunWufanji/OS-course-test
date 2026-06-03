@@ -945,6 +945,24 @@ html, body, #root {
 .recent-name { font-size: 12px; color: rgba(255,255,255,0.7); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .recent-time { font-size: 10px; color: rgba(255,255,255,0.25); margin-top: 2px; }
 
+/* 顶部系统工具栏 */
+.top-system-bar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 10px 48px; border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(0,0,0,0.15);
+}
+.top-system-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 8px; cursor: pointer;
+  color: rgba(255,255,255,0.5); font-size: 12px; transition: all 0.15s;
+}
+.top-system-item:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8); }
+.top-system-label { font-size: 12px; }
+.top-system-time {
+  font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.7);
+  font-variant-numeric: tabular-nums;
+}
+
 /* 窗口 */
 .window {
   position: absolute; background: rgba(20,20,28,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
