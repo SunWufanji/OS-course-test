@@ -26,7 +26,7 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
-  background: #000;
+  background: url('./picture/5.jpg') center/cover no-repeat fixed #000;
   color: var(--text-0);
   height: 100vh;
   overflow: hidden;
@@ -770,7 +770,7 @@ html, body, #root {
 /* ========== macOS 极简桌面 ========== */
 .desktop-mac {
   position: absolute; inset: 0; bottom: 56px; top: 28px;
-  background: url('./picture/5.jpg') center/cover no-repeat;
+  background: transparent;
 }
 
 /* ========== macOS 窗口（红绿灯） ========== */
