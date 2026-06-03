@@ -6,14 +6,21 @@ const DOCK_APPS = [
   { name: '系统日志', icon: '📋', action: 'systemLog' },
   { name: '内核算法实验室', icon: '🧪', action: 'kernelLab' },
   { name: 'CS:GO', icon: '🎮', app: 'CS:GO' },
+  { name: '绝地求生', icon: '🎯', app: '绝地求生' },
+  { name: '我的世界', icon: '⛏️', app: '我的世界' },
   { name: 'Chrome', icon: '🌐', app: 'Chrome' },
+  { name: 'Firefox', icon: '🦊', app: 'Firefox' },
   { name: 'VSCode', icon: '💻', app: 'VSCode' },
+  { name: '终端', icon: '⬛', app: '终端' },
   { name: '记事本', icon: '📝', app: '记事本' },
   { name: 'Word', icon: '📄', app: 'Word' },
-  { name: '终端', icon: '⬛', app: '终端' },
+  { name: 'Excel', icon: '📊', app: 'Excel' },
+  { name: '下载工具', icon: '⬇️', app: '下载工具' },
+  { name: '杀毒软件', icon: '🛡️', app: '杀毒软件' },
+  { name: '系统更新', icon: '🔄', app: '系统更新' },
 ]
 
-function TaskBar({ windows, activeWindowId, systemStatus, onActivateWindow, onOpenTaskManager, onOpenKernelLab, onOpenSystemLog, onLaunchApp, onReset, onToggleControlCenter }) {
+function TaskBar({ windows, activeWindowId, systemStatus, onActivateWindow, onOpenTaskManager, onOpenKernelLab, onOpenSystemLog, onLaunchApp, onReset, onToggleControlCenter, onToggleLauncher }) {
   const [time, setTime] = useState(new Date())
   const [showMenu, setShowMenu] = useState(false)
 
@@ -87,6 +94,10 @@ function TaskBar({ windows, activeWindowId, systemStatus, onActivateWindow, onOp
             </div>
           )
         })}
+        {/* 启动器按钮 */}
+        <div className="dock-icon" title="全部应用" onClick={onToggleLauncher}>
+          <div className="dock-icon-img" style={{ fontSize: '24px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⊞</div>
+        </div>
       </div>
     </>
   )

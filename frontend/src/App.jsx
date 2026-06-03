@@ -7,6 +7,7 @@ import TaskManager from './components/TaskManager/TaskManager'
 import SchedulerLab from './components/SchedulerLab/SchedulerLab'
 import SystemLogViewer from './components/SystemLog/SystemLogViewer'
 import ControlCenter from './components/Desktop/ControlCenter'
+import AppLauncher from './components/Desktop/AppLauncher'
 
 const API_BASE = '/api'
 
@@ -18,6 +19,7 @@ function App() {
   const [activeWindowId, setActiveWindowId] = useState(null)
   const nextWindowId = useRef(1)
   const [controlCenterOpen, setControlCenterOpen] = useState(false)
+  const [launcherOpen, setLauncherOpen] = useState(false)
 
   const fetchSystemStatus = useCallback(async () => {
     try { const res = await axios.get(`${API_BASE}/system/status`); setSystemStatus(res.data) } catch {}
@@ -136,9 +138,13 @@ function App() {
         onOpenSystemLog={() => openWindow('系统日志')}
         onLaunchApp={launchApp}
         onReset={resetSandbox}
-        onToggleControlCenter={() => setControlCenterOpen(!controlCenterOpen)} />
+        onToggleControlCenter={() => setControlCenterOpen(!controlCenterOpen)}
+        onToggleLauncher={() => setLauncherOpen(!launcherOpen)} />
 
       <ControlCenter isOpen={controlCenterOpen} onClose={() => setControlCenterOpen(false)} systemStatus={systemStatus} />
+      <AppLauncher isOpen={launcherOpen} onClose={() => setLauncherOpen(false)}
+        onLaunchApp={launchApp} onOpenTaskManager={() => openWindow('任务管理器')}
+        onOpenKernelLab={() => openWindow('内核算法实验室')} onOpenSystemLog={() => openWindow('系统日志')} />
     </div>
   )
 }

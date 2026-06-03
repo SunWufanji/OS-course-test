@@ -801,8 +801,8 @@ html, body, #root {
 /* ========== macOS 顶部菜单栏 ========== */
 .mac-menubar {
   position: absolute; top: 0; left: 0; right: 0; height: 28px;
-  background: rgba(10,10,16,0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(0,0,0,0.05); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 16px; z-index: 1000; user-select: none;
 }
@@ -877,6 +877,39 @@ html, body, #root {
 }
 .cc-info-label { font-size: 12px; color: rgba(255,255,255,0.5); }
 .cc-info-value { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ========== 应用启动器 ========== */
+.launcher-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); animation: fadeIn 0.2s ease; }
+.launcher-panel {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 680px; max-height: 70vh;
+  background: rgba(20,20,30,0.85); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6); z-index: 2001;
+  padding: 24px; overflow-y: auto;
+  animation: fadeIn 0.2s ease;
+}
+.launcher-search {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 10px 14px; margin-bottom: 20px;
+}
+.launcher-search-icon { font-size: 16px; color: rgba(255,255,255,0.3); }
+.launcher-search-input { flex: 1; background: none; border: none; outline: none; color: #e0f0ff; font-size: 15px; }
+.launcher-search-input::placeholder { color: rgba(255,255,255,0.25); }
+.launcher-search-clear { background: none; border: none; color: rgba(255,255,255,0.3); cursor: pointer; font-size: 14px; padding: 4px; }
+.launcher-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+.launcher-app {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 16px 8px; border-radius: 12px; cursor: pointer;
+  transition: all 0.2s;
+}
+.launcher-app:hover { background: rgba(255,255,255,0.08); transform: scale(1.05); }
+.launcher-app:active { transform: scale(0.95); }
+.launcher-app-icon { font-size: 36px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3)); }
+.launcher-app-name { font-size: 11px; color: rgba(255,255,255,0.8); text-align: center; }
+.launcher-app-category { font-size: 9px; color: rgba(255,255,255,0.25); }
+.launcher-empty { text-align: center; padding: 40px; color: rgba(255,255,255,0.3); }
 
 /* 系统托盘 */
 .taskbar-tray { display: flex; align-items: center; gap: 12px; padding: 0 12px; height: 100%; }
