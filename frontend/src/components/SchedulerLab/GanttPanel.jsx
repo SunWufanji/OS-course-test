@@ -1,15 +1,24 @@
 import React, { useState } from 'react'
+import MFQPanel from '../MFQPanel'
 
 function GanttPanel({ ganttData, currentTime, stats, currentAlgo, mfqQueues, processes, runningProcess }) {
   const [hovered, setHovered] = useState(false)
+  const [pinned, setPinned] = useState(false)
 
   return (
-    <div className={`gantt-panel-hitbox ${hovered ? 'reveal' : ''}`}
+    <div className={`gantt-panel-hitbox ${hovered || pinned ? 'reveal' : ''} ${pinned ? 'pinned' : ''}`}
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}>
+      onMouseLeave={() => { if (!pinned) setHovered(false) }}>
       <div className="gantt-panel">
         <div className="gantt-header">
           <div className="gantt-title">CPU 调度甘特图</div>
+          <button onClick={() => setPinned(!pinned)} style={{
+            background: pinned ? 'var(--accent-soft)' : 'transparent',
+            border: `1px solid ${pinned ? 'var(--accent)' : 'var(--border)'}`,
+            borderRadius: '4px', padding: '2px 8px', cursor: 'pointer',
+            fontSize: '11px', color: pinned ? 'var(--accent)' : 'var(--text-3)',
+            transition: 'all 0.2s'
+          }}>{pinned ? '📌 已固定' : '📌 固定'}</button>
           <div className="gantt-legend">
             {[...new Set(ganttData.map(d => d.pid))].map(pid => {
               const d = ganttData.find(x => x.pid === pid)
@@ -62,6 +71,12 @@ function GanttPanel({ ganttData, currentTime, stats, currentAlgo, mfqQueues, pro
           <span style={{ fontSize: '11px', color: 'var(--text-2)' }}>已完成: <b style={{ color: 'var(--green)' }}>{stats.completed || 0}</b></span>
           <span style={{ fontSize: '11px', color: 'var(--text-2)' }}>CPU: <b style={{ color: 'var(--cyan)' }}>{stats.cpuUsage || 0}%</b></span>
         </div>
+        {/* MFQ 队列状态 */}
+        {currentAlgo === 'MFQ' && (
+          <div style={{ marginTop: '8px' }}>
+            <MFQPanel mfqQueues={mfqQueues} processes={processes} runningProcess={runningProcess} />
+          </div>
+        )}
       </div>
     </div>
   )

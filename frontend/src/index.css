@@ -286,7 +286,9 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   background: var(--bg-0);
-  overflow: hidden;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
   height: 100%;
 }
 
@@ -846,6 +848,10 @@ html, body, #root {
 .dock-hitbox.autohide .mac-dock { transform: translateX(-50%) translateY(calc(100% + 30px)); }
 .dock-hitbox.autohide.reveal .mac-dock { transform: translateX(-50%) translateY(-10px); }
 .dock-hitbox:not(.autohide) .mac-dock { transform: translateX(-50%); }
+
+/* 甘特图固定状态 */
+.gantt-panel-hitbox.pinned { pointer-events: auto; }
+.gantt-panel-hitbox.pinned .gantt-panel { transform: translateY(0); }
 
 .mac-dock {
   position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
