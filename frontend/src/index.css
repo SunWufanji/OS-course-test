@@ -31,6 +31,13 @@ body {
   height: 100vh;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+
+html, body, #root {
+  height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 #root {
@@ -39,8 +46,10 @@ body {
 
 .app {
   display: grid;
-  grid-template-rows: 48px 1fr 140px;
+  grid-template-rows: 48px 1fr 160px;
   height: 100vh;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* 标题栏 */
@@ -99,6 +108,8 @@ body {
   display: grid;
   grid-template-columns: 220px 1fr;
   background: var(--bg-0);
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* 侧边栏 */
@@ -108,8 +119,24 @@ body {
   padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+}
+
+/* 侧边栏滚动条 */
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--bg-4);
+  border-radius: 2px;
 }
 
 .sidebar-section {
@@ -257,6 +284,7 @@ body {
   flex-direction: column;
   background: var(--bg-0);
   overflow: hidden;
+  height: 100%;
 }
 
 /* 状态栏 */
@@ -405,6 +433,7 @@ body {
   flex: 1;
   overflow: auto;
   background: var(--bg-0);
+  min-height: 0;
 }
 
 .process-table {
@@ -540,7 +569,21 @@ body {
   border-top: 1px solid var(--border);
   display: grid;
   grid-template-columns: 1fr 300px;
-  overflow: hidden;
+  overflow: auto;
+  min-height: 0;
+}
+
+.bottom-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.bottom-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.bottom-panel::-webkit-scrollbar-thumb {
+  background: var(--bg-4);
+  border-radius: 3px;
 }
 
 .gantt-section {
@@ -548,6 +591,8 @@ body {
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow: auto;
 }
 
 .gantt-header {
@@ -636,6 +681,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 0;
+  overflow: auto;
 }
 
 .stats-title {

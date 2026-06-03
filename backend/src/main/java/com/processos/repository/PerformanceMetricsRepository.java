@@ -21,4 +21,6 @@ public interface PerformanceMetricsRepository extends JpaRepository<PerformanceM
     List<PerformanceMetrics> findTop10ByOrderByCreatedAtDesc();
 
     List<PerformanceMetrics> findByAlgorithmAndScenarioId(String algorithm, Long scenarioId);
+
+    void deleteBySessionId(String sessionId);
 }

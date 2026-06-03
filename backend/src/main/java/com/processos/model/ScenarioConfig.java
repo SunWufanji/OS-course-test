@@ -39,7 +39,7 @@ public class ScenarioConfig {
     private LocalDateTime updatedAt;
 
     public enum LoadType {
-        LIGHT, MEDIUM, HEAVY
+        light, medium, heavy
     }
 
     @PrePersist

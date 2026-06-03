@@ -44,6 +44,12 @@ public class ExecutionLog {
     @Column(name = "burst_time")
     private Integer burstTime;
 
+    @Column(name = "arrival_time")
+    private Integer arrivalTime;
+
+    @Column(name = "priority")
+    private Integer priority;
+
     @Column(name = "waiting_time")
     private Integer waitingTime;
 
@@ -113,6 +119,12 @@ public class ExecutionLog {
 
     public Integer getCompletionTime() { return completionTime; }
     public void setCompletionTime(Integer completionTime) { this.completionTime = completionTime; }
+
+    public Integer getArrivalTime() { return arrivalTime; }
+    public void setArrivalTime(Integer arrivalTime) { this.arrivalTime = arrivalTime; }
+
+    public Integer getPriority() { return priority; }
+    public void setPriority(Integer priority) { this.priority = priority; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

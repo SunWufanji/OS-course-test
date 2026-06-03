@@ -14,7 +14,21 @@ public class ProcessControlBlock {
     private int waitingTime;
     private int turnaroundTime;
     private int completionTime;
+    private int startTime;   // 开始运行时间
     private String color;
+    private int parentPid;  // 父进程ID，-1表示无父进程
+
+    // ========== 沙盒模式字段 ==========
+    private String appType;       // 应用类型（对应 SimulatedApp 枚举名）
+    private String icon;          // 显示图标
+    private double baseCpuUsage;  // CPU 基础占用率
+    private double cpuUsage;      // 当前 CPU 占用率（实时抖动）
+    private int memoryUsage;      // 内存需求 (MB)
+    private int currentMemoryUsage; // 当前内存使用 (MB)
+    private int diskRead;         // 磁盘读取速度 (MB/s)
+    private int diskWrite;        // 磁盘写入速度 (MB/s)
+    private int networkSpeed;     // 网络速度 (KB/s)
+    private int coreIndex;        // 分配的 CPU 核心索引，-1 表示未分配
 
     public ProcessControlBlock() {}
 
@@ -30,6 +44,12 @@ public class ProcessControlBlock {
         this.turnaroundTime = 0;
         this.completionTime = 0;
         this.color = color;
+        this.parentPid = -1;  // 默认无父进程
+    }
+
+    public ProcessControlBlock(int pid, String name, int burstTime, int priority, int arrivalTime, String color, int parentPid) {
+        this(pid, name, burstTime, priority, arrivalTime, color);
+        this.parentPid = parentPid;
     }
 
     // Getters and Setters
@@ -63,6 +83,43 @@ public class ProcessControlBlock {
     public int getCompletionTime() { return completionTime; }
     public void setCompletionTime(int completionTime) { this.completionTime = completionTime; }
 
+    public int getStartTime() { return startTime; }
+    public void setStartTime(int startTime) { this.startTime = startTime; }
+
     public String getColor() { return color; }
     public void setColor(String color) { this.color = color; }
+
+    public int getParentPid() { return parentPid; }
+    public void setParentPid(int parentPid) { this.parentPid = parentPid; }
+
+    // ========== 沙盒模式 Getters/Setters ==========
+    public String getAppType() { return appType; }
+    public void setAppType(String appType) { this.appType = appType; }
+
+    public String getIcon() { return icon; }
+    public void setIcon(String icon) { this.icon = icon; }
+
+    public double getBaseCpuUsage() { return baseCpuUsage; }
+    public void setBaseCpuUsage(double baseCpuUsage) { this.baseCpuUsage = baseCpuUsage; }
+
+    public double getCpuUsage() { return cpuUsage; }
+    public void setCpuUsage(double cpuUsage) { this.cpuUsage = cpuUsage; }
+
+    public int getMemoryUsage() { return memoryUsage; }
+    public void setMemoryUsage(int memoryUsage) { this.memoryUsage = memoryUsage; }
+
+    public int getCurrentMemoryUsage() { return currentMemoryUsage; }
+    public void setCurrentMemoryUsage(int currentMemoryUsage) { this.currentMemoryUsage = currentMemoryUsage; }
+
+    public int getDiskRead() { return diskRead; }
+    public void setDiskRead(int diskRead) { this.diskRead = diskRead; }
+
+    public int getDiskWrite() { return diskWrite; }
+    public void setDiskWrite(int diskWrite) { this.diskWrite = diskWrite; }
+
+    public int getNetworkSpeed() { return networkSpeed; }
+    public void setNetworkSpeed(int networkSpeed) { this.networkSpeed = networkSpeed; }
+
+    public int getCoreIndex() { return coreIndex; }
+    public void setCoreIndex(int coreIndex) { this.coreIndex = coreIndex; }
 }

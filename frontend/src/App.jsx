@@ -1,9 +1,33 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import axios from 'axios'
+import MFQPanel from './components/MFQPanel'
 
 const API_BASE = '/api'
 const StateNames = { created: '新建', ready: '就绪', running: '运行', blocked: '阻塞', terminated: '结束' }
-const AlgoDesc = { FCFS: '先来先服务', SJF: '短作业优先', RR: '时间片轮转', Priority: '优先级调度' }
+const AlgoDesc = { FCFS: '先来先服务', SJF: '短作业优先', SRTN: '最短剩余时间优先', RR: '时间片轮转', Priority: '非抢占优先级', PreemptivePriority: '抢占式优先级', MFQ: '多级反馈队列' }
+
+// 进程树节点组件
+function ProcessTreeNode({ node, level }) {
+  const stateColors = {
+    CREATED: '#71717a', READY: '#3b82f6', RUNNING: '#22c55e',
+    BLOCKED: '#f59e0b', TERMINATED: '#52525b'
+  }
+  const stateNames = { CREATED: '新建', READY: '就绪', RUNNING: '运行', BLOCKED: '阻塞', TERMINATED: '结束' }
+
+  return (
+    <div style={{marginLeft: level * 20}}>
+      <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'6px 0'}}>
+        <span style={{color:'#52525b'}}>{level > 0 ? '├─' : '●'}</span>
+        <span style={{color:node.color,fontWeight:600}}>{node.name}</span>
+        <span style={{fontSize:'11px',color:'#71717a'}}>(PID:{node.pid})</span>
+        <span style={{fontSize:'10px',padding:'2px 6px',background:stateColors[node.state]+'22',color:stateColors[node.state],borderRadius:'4px'}}>{stateNames[node.state]}</span>
+      </div>
+      {node.children && node.children.map(child => (
+        <ProcessTreeNode key={child.pid} node={child} level={level + 1} />
+      ))}
+    </div>
+  )
+}
 
 function App() {
   const [processes, setProcesses] = useState([])
@@ -38,31 +62,102 @@ function App() {
       setRunningProcess(d.runningProcess)
       setCurrentTime(d.currentTime || 0)
       setCurrentAlgo(d.currentAlgo || 'FCFS')
-      setGanttData(d.ganttData || [])
+      // 合并已完成的甘特图数据和当前运行的进程
+      const allGantt = [...(d.ganttData || [])]
+      if (d.currentGantt) {
+        allGantt.push(d.currentGantt)
+      }
+      setGanttData(allGantt)
       setStats(d.stats || {})
+      // MFQ队列信息
+      if (d.mfqQueues) {
+        setMfqQueues(d.mfqQueues)
+      }
     } catch (e) { console.error(e) }
   }, [])
 
+  // 进程树功能
+  const [processTree, setProcessTree] = useState([])
+  const [mfqQueues, setMfqQueues] = useState([0, 0, 0, 0])
+  const fetchProcessTree = async () => { try { const r = await axios.get(`${API_BASE}/processes/tree`); setProcessTree(r.data || []) } catch(e) { console.error(e) } }
+
+  // 同步演示功能
+  const [syncLog, setSyncLog] = useState([])
+  const [syncStatus, setSyncStatus] = useState({})
+  const fetchSyncStatus = async () => {
+    try {
+      const r = await axios.get(`${API_BASE}/sync/status`)
+      setSyncStatus(r.data)
+      setSyncLog(r.data.log || [])
+    } catch(e) { console.error(e) }
+  }
+  const startProducerConsumer = async () => { try { await axios.post(`${API_BASE}/sync/producer-consumer`); fetchSyncStatus() } catch(e) { console.error(e) } }
+  const startDiningPhilosophers = async () => { try { await axios.post(`${API_BASE}/sync/dining-philosophers`); fetchSyncStatus() } catch(e) { console.error(e) } }
+  const startReaderWriter = async () => { try { await axios.post(`${API_BASE}/sync/reader-writer`); fetchSyncStatus() } catch(e) { console.error(e) } }
+  const stopSyncDemo = async () => { try { await axios.post(`${API_BASE}/sync/stop`); fetchSyncStatus() } catch(e) { console.error(e) } }
+  const resetSyncDemo = async () => { try { await axios.post(`${API_BASE}/sync/reset`); fetchSyncStatus(); setSyncLog([]) } catch(e) { console.error(e) } }
+  const forkProcess = async (pid) => {
+    try {
+      const childName = prompt('请输入子进程名称:', `P${pid}_child`)
+      if (!childName) return
+      await axios.post(`${API_BASE}/processes/${pid}/fork`, { name: childName })
+      fetchData()
+      fetchProcessTree()
+    } catch(e) { console.error(e) }
+  }
+  const killTree = async (pid) => {
+    if (!confirm('确定要终止该进程及其所有子进程吗？')) return
+    try {
+      const r = await axios.delete(`${API_BASE}/processes/${pid}/tree`)
+      alert(`已终止 ${r.data.killedPids.length} 个进程`)
+      fetchData()
+      fetchProcessTree()
+    } catch(e) { console.error(e) }
+  }
+
   const fetchScenarios = async () => { try { const r = await axios.get(`${API_BASE}/scenarios`); setScenarios(r.data || []) } catch(e) { console.error(e) } }
   const fetchHistory = async () => { try { const r = await axios.get(`${API_BASE}/history`); setHistoryRecords(r.data || []) } catch(e) { console.error(e) } }
+  const deleteHistoryRecord = async (id) => {
+    if (!confirm('确定要删除这条记录吗？')) return
+    try {
+      await axios.delete(`${API_BASE}/history/${id}`)
+      fetchHistory()
+    } catch(e) { console.error(e) }
+  }
+  const clearAllHistory = async () => {
+    if (!confirm('确定要清空所有历史记录吗？')) return
+    try {
+      await axios.delete(`${API_BASE}/history`)
+      fetchHistory()
+    } catch(e) { console.error(e) }
+  }
+  const replayHistory = async (id) => {
+    if (!confirm('确定要重新创建这些进程吗？')) return
+    try {
+      await axios.post(`${API_BASE}/history/${id}/replay`)
+      fetchData()
+      setActivePanel('main')
+    } catch(e) { console.error(e) }
+  }
   const saveResults = async () => { try { await axios.post(`${API_BASE}/save`); alert('保存成功！'); fetchHistory() } catch(e) { alert('保存失败') } }
   const loadScenario = async (id) => { try { await axios.post(`${API_BASE}/scenarios/${id}/load`); fetchData(); setActivePanel('main') } catch(e) { console.error(e) } }
-  const createProcess = async () => { try { await axios.post(`${API_BASE}/processes`, { name: inputName || `P${processes.length+1}`, burstTime: +inputBurst||5, priority: +inputPriority||3, arrivalTime: +inputArrival||0 }); fetchData() } catch(e) { console.error(e) } }
-  const tick = async () => { try { await axios.post(`${API_BASE}/tick`); fetchData() } catch(e) { console.error(e) } }
-  const resetSystem = async () => { stopPlay(); try { await axios.post(`${API_BASE}/reset`); setSelectedPid(null); fetchData() } catch(e) { console.error(e) } }
-  const loadDemo = async () => { stopPlay(); try { await axios.post(`${API_BASE}/demo`); fetchData() } catch(e) { console.error(e) } }
+  const createProcess = async () => { try { await axios.post(`${API_BASE}/processes`, { name: inputName || `P${processes.length+1}`, burstTime: +inputBurst||5, priority: +inputPriority||3, arrivalTime: +inputArrival||0 }); fetchData(); setActivePanel('main') } catch(e) { console.error(e) } }
+  const tick = async () => { try { await axios.post(`${API_BASE}/tick`); fetchData(); setActivePanel('main') } catch(e) { console.error(e) } }
+  const resetSystem = async () => { stopPlay(); try { await axios.post(`${API_BASE}/reset`); setSelectedPid(null); fetchData(); setActivePanel('main') } catch(e) { console.error(e) } }
+  const loadDemo = async () => { stopPlay(); try { await axios.post(`${API_BASE}/demo`); fetchData(); setActivePanel('main') } catch(e) { console.error(e) } }
   const setScheduler = async (algo) => { try { await axios.post(`${API_BASE}/scheduler`, { algo }); setCurrentAlgo(algo); fetchData() } catch(e) { console.error(e) } }
 
   const togglePlay = () => { isPlaying ? stopPlay() : startPlay() }
   const startPlay = () => {
     setIsPlaying(true)
+    setActivePanel('main')
     playIntervalRef.current = setInterval(async () => {
       try { await axios.post(`${API_BASE}/tick`); fetchData(); const r = await axios.get(`${API_BASE}/processes`); if(r.data.processes.every(p => p.state==='TERMINATED')) stopPlay() } catch(e) { stopPlay() }
     }, 500)
   }
   const stopPlay = () => { setIsPlaying(false); if(playIntervalRef.current) { clearInterval(playIntervalRef.current); playIntervalRef.current = null } }
 
-  useEffect(() => { fetchData(); fetchScenarios(); fetchHistory(); return () => stopPlay() }, [fetchData])
+  useEffect(() => { fetchData(); fetchScenarios(); fetchHistory(); fetchProcessTree(); return () => stopPlay() }, [fetchData])
 
   const counts = { created: processes.filter(p=>p.state==='CREATED').length, ready: readyQueue.length, running: runningProcess?1:0, blocked: blockedQueue.length, terminated: processes.filter(p=>p.state==='TERMINATED').length }
   let filteredProcesses = processes
@@ -106,6 +201,20 @@ function App() {
             <button className="control-btn danger" onClick={resetSystem} style={{marginTop:'6px'}}>↺ 重置</button>
           </div>
           <div className="sidebar-section">
+            <div className="sidebar-label">进程树</div>
+            <button className="control-btn ghost" onClick={()=>{fetchProcessTree();setActivePanel('tree')}} style={{marginBottom:'6px'}}><span>🌳</span><span>查看进程树</span></button>
+            {selectedPid && (
+              <>
+                <button className="control-btn ghost" onClick={()=>forkProcess(selectedPid)} style={{marginBottom:'6px'}}><span>🔱</span><span>派生子进程</span></button>
+                <button className="control-btn" onClick={()=>killTree(selectedPid)} style={{background:'var(--red-soft)',color:'var(--red)',border:'1px solid rgba(239,68,68,0.3)'}}><span>☠</span><span>级联终止</span></button>
+              </>
+            )}
+          </div>
+          <div className="sidebar-section">
+            <div className="sidebar-label">同步演示</div>
+            <button className="control-btn ghost" onClick={()=>{fetchSyncStatus();setActivePanel('sync')}} style={{marginBottom:'6px'}}><span>🔒</span><span>同步互斥演示</span></button>
+          </div>
+          <div className="sidebar-section">
             <div className="sidebar-label">数据库</div>
             <button className="control-btn" onClick={saveResults} style={{marginBottom:'6px',background:'var(--green-soft)',color:'var(--green)',border:'1px solid rgba(34,197,94,0.3)'}}><span>💾</span><span>保存结果</span></button>
             <button className="control-btn ghost" onClick={()=>{setActivePanel('history');fetchHistory()}} style={{marginBottom:'6px'}}><span>📜</span><span>历史记录</span></button>
@@ -114,17 +223,15 @@ function App() {
           <div className="control-card">
             <div className="control-title">创建进程</div>
             <div className="control-input"><div className="control-label">名称</div><input className="control-field" value={inputName} onChange={e=>setInputName(e.target.value)} /></div>
-            <div className="control-row">
-              <div className="control-input"><div className="control-label">执行时间</div><input type="number" className="control-field" value={inputBurst} onChange={e=>setInputBurst(e.target.value)} /></div>
-              <div className="control-input"><div className="control-label">优先级</div><input type="number" className="control-field" value={inputPriority} onChange={e=>setInputPriority(e.target.value)} /></div>
-            </div>
+            <div className="control-input"><div className="control-label">执行时间</div><input type="number" className="control-field" value={inputBurst} onChange={e=>setInputBurst(e.target.value)} /></div>
+            <div className="control-input"><div className="control-label">优先级</div><input type="number" className="control-field" value={inputPriority} onChange={e=>setInputPriority(e.target.value)} /></div>
             <div className="control-input" style={{marginBottom:'8px'}}><div className="control-label">到达时间</div><input type="number" className="control-field" value={inputArrival} onChange={e=>setInputArrival(e.target.value)} /></div>
             <button className="control-btn primary" onClick={createProcess}>+ 创建</button>
           </div>
           <div className="control-card">
             <div className="control-title">调度算法</div>
             <div className="algo-grid">
-              {['FCFS','SJF','RR','Priority'].map(a=>(<div key={a} className={`algo-option ${currentAlgo===a?'active':''}`} onClick={()=>setScheduler(a)}>{{FCFS:'FCFS',SJF:'SJF',RR:'RR',Priority:'优先级'}[a]}</div>))}
+              {['FCFS','SJF','SRTN','RR','Priority','PreemptivePriority','MFQ'].map(a=>(<div key={a} className={`algo-option ${currentAlgo===a?'active':''}`} onClick={()=>setScheduler(a)}>{{FCFS:'FCFS',SJF:'SJF',SRTN:'SRTN',RR:'RR',Priority:'优先级',PreemptivePriority:'抢占优先级',MFQ:'MFQ'}[a]}</div>))}
             </div>
             <div className="control-input" style={{marginTop:'8px'}}><div className="control-label">时间片(RR)</div><input type="number" className="control-field" value={inputQuantum} onChange={e=>setInputQuantum(e.target.value)} min="1" /></div>
           </div>
@@ -143,10 +250,94 @@ function App() {
 
           {activePanel==='history'&&(
             <div style={{flex:1,padding:'20px',overflow:'auto'}}>
-              <h3 style={{fontSize:'16px',fontWeight:600,marginBottom:'16px',color:'var(--text-0)'}}>📜 历史模拟记录</h3>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px'}}>
+                <h3 style={{fontSize:'16px',fontWeight:600,color:'var(--text-0)'}}>📜 历史模拟记录</h3>
+                {historyRecords.length > 0 && (
+                  <button onClick={clearAllHistory} style={{padding:'6px 12px',background:'var(--red-soft)',color:'var(--red)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'6px',cursor:'pointer',fontSize:'12px'}}>🗑 清空全部</button>
+                )}
+              </div>
               {historyRecords.length===0?<div style={{textAlign:'center',padding:'40px',color:'var(--text-3)'}}>暂无记录</div>:(
-                <table className="process-table"><thead><tr><th>时间</th><th>算法</th><th>平均周转</th><th>平均等待</th><th>吞吐量</th><th>CPU</th><th>总时间</th><th>完成数</th></tr></thead>
-                <tbody>{historyRecords.map((r,i)=>(<tr key={i}><td>{new Date(r.createdAt).toLocaleString()}</td><td><span className="state-tag ready">{r.algorithm}</span></td><td>{r.avgTurnaround}</td><td>{r.avgWaiting}</td><td>{r.throughput}</td><td>{r.cpuUtilization}%</td><td>{r.totalTime}</td><td>{r.completedCount}</td></tr>))}</tbody></table>
+                <table className="process-table"><thead><tr><th>时间</th><th>算法</th><th>平均周转</th><th>平均等待</th><th>吞吐量</th><th>CPU</th><th>总时间</th><th>完成数</th><th>操作</th></tr></thead>
+                <tbody>{historyRecords.map((r,i)=>(<tr key={i||r.createdAt}><td>{new Date(r.createdAt).toLocaleString()}</td><td><span className="state-tag ready">{r.algorithm}</span></td><td>{r.avgTurnaround}</td><td>{r.avgWaiting}</td><td>{r.throughput}</td><td>{r.cpuUtilization}%</td><td>{r.totalTime}</td><td>{r.completedCount}</td><td style={{display:'flex',gap:'4px'}}><button onClick={()=>replayHistory(r.id)} style={{padding:'4px 8px',background:'var(--green-soft)',color:'var(--green)',border:'none',borderRadius:'4px',cursor:'pointer',fontSize:'11px'}}>重新创建</button><button onClick={()=>deleteHistoryRecord(r.id)} style={{padding:'4px 8px',background:'var(--red-soft)',color:'var(--red)',border:'none',borderRadius:'4px',cursor:'pointer',fontSize:'11px'}}>删除</button></td></tr>))}</tbody></table>
+              )}
+            </div>
+          )}
+
+          {activePanel==='sync' && (
+            <div style={{flex:1,padding:'20px',overflow:'auto'}}>
+              <h3 style={{fontSize:'16px',fontWeight:600,marginBottom:'16px',color:'var(--text-0)'}}>🔒 进程同步互斥演示</h3>
+
+              {/* 演示选择 */}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'12px',marginBottom:'20px'}}>
+                <div onClick={startProducerConsumer} style={{background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:'12px',padding:'16px',cursor:'pointer',textAlign:'center'}}>
+                  <div style={{fontSize:'24px',marginBottom:'8px'}}>🏭</div>
+                  <div style={{fontWeight:600,color:'var(--text-0)',marginBottom:'4px'}}>生产者消费者</div>
+                  <div style={{fontSize:'11px',color:'var(--text-3)'}}>信号量+互斥锁</div>
+                </div>
+                <div onClick={startDiningPhilosophers} style={{background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:'12px',padding:'16px',cursor:'pointer',textAlign:'center'}}>
+                  <div style={{fontSize:'24px',marginBottom:'8px'}}>🍽️</div>
+                  <div style={{fontWeight:600,color:'var(--text-0)',marginBottom:'4px'}}>哲学家就餐</div>
+                  <div style={{fontSize:'11px',color:'var(--text-3)'}}>死锁避免</div>
+                </div>
+                <div onClick={startReaderWriter} style={{background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:'12px',padding:'16px',cursor:'pointer',textAlign:'center'}}>
+                  <div style={{fontSize:'24px',marginBottom:'8px'}}>📖</div>
+                  <div style={{fontWeight:600,color:'var(--text-0)',marginBottom:'4px'}}>读者写者</div>
+                  <div style={{fontSize:'11px',color:'var(--text-3)'}}>读写锁</div>
+                </div>
+              </div>
+
+              {/* 控制按钮 */}
+              <div style={{display:'flex',gap:'8px',marginBottom:'16px'}}>
+                <button className="control-btn" onClick={stopSyncDemo} style={{background:'var(--amber-soft)',color:'var(--amber)',border:'1px solid rgba(245,158,11,0.3)'}}>⏹ 停止</button>
+                <button className="control-btn" onClick={resetSyncDemo}>↺ 重置</button>
+                <button className="control-btn ghost" onClick={fetchSyncStatus}>🔄 刷新状态</button>
+              </div>
+
+              {/* 状态信息 */}
+              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px',marginBottom:'16px'}}>
+                <div style={{background:'var(--bg-2)',borderRadius:'8px',padding:'12px',textAlign:'center'}}>
+                  <div style={{fontSize:'18px',fontWeight:700,color:'var(--text-0)'}}>{syncStatus.buffer || 0}</div>
+                  <div style={{fontSize:'11px',color:'var(--text-3)'}}>缓冲区</div>
+                </div>
+                <div style={{background:'var(--bg-2)',borderRadius:'8px',padding:'12px',textAlign:'center'}}>
+                  <div style={{fontSize:'18px',fontWeight:700,color:'var(--green)'}}>{syncStatus.producerCount || 0}</div>
+                  <div style={{fontSize:'11px',color:'var(--text-3)'}}>已生产</div>
+                </div>
+                <div style={{background:'var(--bg-2)',borderRadius:'8px',padding:'12px',textAlign:'center'}}>
+                  <div style={{fontSize:'18px',fontWeight:700,color:'var(--blue)'}}>{syncStatus.consumerCount || 0}</div>
+                  <div style={{fontSize:'11px',color:'var(--text-3)'}}>已消费</div>
+                </div>
+                <div style={{background:'var(--bg-2)',borderRadius:'8px',padding:'12px',textAlign:'center'}}>
+                  <div style={{fontSize:'18px',fontWeight:700,color:'var(--text-0)'}}>{syncStatus.semaphoreValue || 0}</div>
+                  <div style={{fontSize:'11px',color:'var(--text-3)'}}>信号量</div>
+                </div>
+              </div>
+
+              {/* 日志 */}
+              <div style={{background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:'8px',padding:'12px',maxHeight:'300px',overflow:'auto',fontFamily:'monospace',fontSize:'12px'}}>
+                <div style={{color:'var(--text-3)',marginBottom:'8px',fontSize:'11px',textTransform:'uppercase',letterSpacing:'0.5px'}}>运行日志</div>
+                {syncLog.length === 0 ? (
+                  <div style={{color:'var(--text-3)',textAlign:'center',padding:'20px'}}>点击上方演示开始</div>
+                ) : (
+                  syncLog.slice().reverse().map((log, i) => (
+                    <div key={i} style={{padding:'4px 0',color:'var(--text-2)',borderBottom:'1px solid var(--border)'}}>{log}</div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {activePanel==='tree' && (
+            <div style={{flex:1,padding:'20px',overflow:'auto'}}>
+              <h3 style={{fontSize:'16px',fontWeight:600,marginBottom:'16px',color:'var(--text-0)'}}>🌳 进程树</h3>
+              {processTree.length === 0 ? (
+                <div style={{textAlign:'center',padding:'40px',color:'var(--text-3)'}}>暂无进程树数据</div>
+              ) : (
+                <div style={{fontFamily:'monospace',fontSize:'13px'}}>
+                  {processTree.map(node => (
+                    <ProcessTreeNode key={node.pid} node={node} level={0} />
+                  ))}
+                </div>
               )}
             </div>
           )}
@@ -214,9 +405,48 @@ function App() {
           </div>
           <div className="gantt-chart">
             <div className="gantt-timeline">
-              {ganttData.length===0||currentTime===0?<div className="gantt-empty">点击"开始模拟"查看</div>:ganttData.map((d,i)=><div key={i} className="gantt-block" style={{width:`${((d.end-d.start)/currentTime)*100}%`,background:d.color}}>{d.name}</div>)}
+              {ganttData.length===0||currentTime===0?(
+                <div className="gantt-empty">点击"开始模拟"查看</div>
+              ):(
+                (() => {
+                  // 构建完整的甘特图，包含空闲时间
+                  const blocks = [];
+                  let lastEnd = 0;
+                  // 按开始时间排序
+                  const sorted = [...ganttData].sort((a,b) => a.start - b.start);
+                  sorted.forEach((d, i) => {
+                    // 如果有空闲时间，添加空闲块
+                    if (d.start > lastEnd) {
+                      blocks.push({type:'idle', start:lastEnd, end:d.start, width:((d.start-lastEnd)/currentTime)*100});
+                    }
+                    // 添加进程块
+                    blocks.push({type:'process', ...d, width:((d.end-d.start)/currentTime)*100});
+                    lastEnd = d.end;
+                  });
+                  return blocks.map((b, i) => (
+                    b.type === 'idle' ? (
+                      <div key={i} style={{width:`${b.width}%`, background:'transparent', borderRight:'1px dashed rgba(255,255,255,0.1)'}}></div>
+                    ) : (
+                      <div key={i} className="gantt-block" style={{width:`${b.width}%`, background:b.color}}>{b.name}</div>
+                    )
+                  ));
+                })()
+              )}
             </div>
-            <div className="gantt-axis">{currentTime>0&&Array.from({length:Math.min(currentTime+1,20)},(_,i)=><span key={i} className="gantt-tick" style={{width:`${100/Math.min(currentTime+1,20)}%`}}>{i}</span>)}</div>
+            <div className="gantt-axis" style={{display:'flex',justifyContent:'space-between',position:'relative'}}>
+              {currentTime>0 && (()=>{
+                const maxTicks = 20; // 最多显示20个刻度
+                const step = currentTime <= maxTicks ? 1 : Math.ceil(currentTime / maxTicks);
+                const ticks = [];
+                for(let i = 0; i <= currentTime; i += step) {
+                  ticks.push(i);
+                }
+                if(ticks[ticks.length-1] !== currentTime) ticks.push(currentTime);
+                return ticks.map((t, idx) => (
+                  <span key={idx} className="gantt-tick" style={{position:'absolute',left:`${(t/currentTime)*100}%`,transform:'translateX(-50%)'}}>{t}</span>
+                ));
+              })()}
+            </div>
           </div>
         </div>
         <div className="stats-section">
@@ -227,6 +457,14 @@ function App() {
             <div className="stat-box"><div className="stat-value">{stats.completed||0}</div><div className="stat-label">已完成</div></div>
             <div className="stat-box"><div className="stat-value">{stats.cpuUsage||0}%</div><div className="stat-label">CPU</div></div>
           </div>
+          {/* MFQ队列状态 */}
+          {currentAlgo === 'MFQ' && (
+            <MFQPanel
+              mfqQueues={mfqQueues}
+              processes={processes}
+              runningProcess={runningProcess}
+            />
+          )}
         </div>
       </div>
     </div>
