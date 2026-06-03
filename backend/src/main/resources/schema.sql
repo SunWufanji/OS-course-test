@@ -56,6 +56,20 @@ CREATE TABLE performance_metrics (
     FOREIGN KEY (scenario_id) REFERENCES scenario_config(id)
 );
 
+-- 4. 系统事件日志表（仿 Windows Event Viewer）
+CREATE TABLE IF NOT EXISTS system_events (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    level VARCHAR(20) NOT NULL COMMENT '日志级别: INFO/SUCCESS/WARNING/ERROR',
+    source VARCHAR(30) NOT NULL COMMENT '事件来源: PROCESS_MGR/MEMORY_MGR/LAB/SYNC/SYSTEM',
+    message TEXT NOT NULL COMMENT '事件消息',
+    pid INT COMMENT '关联进程PID',
+    process_name VARCHAR(50) COMMENT '关联进程名',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_level (level),
+    INDEX idx_source (source),
+    INDEX idx_created (created_at)
+);
+
 -- 插入默认实验场景
 INSERT INTO scenario_config (scenario_name, description, process_count, load_type, config_json, is_default) VALUES
 ('轻载场景', '少量短作业，适合测试基本调度功能', 3, 'light',

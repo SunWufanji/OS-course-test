@@ -4,6 +4,7 @@ import com.processos.hardware.HardwarePool;
 import com.processos.model.ProcessControlBlock;
 import com.processos.model.ProcessState;
 import com.processos.model.SimulatedApp;
+import com.processos.service.SystemEventService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +21,9 @@ public class ProcessManager {
 
     @Autowired
     private HardwarePool hardwarePool;
+
+    @Autowired
+    private SystemEventService eventService;
 
     // 活跃进程表（Active Process Table）
     private final List<ProcessControlBlock> processTable = new CopyOnWriteArrayList<>();
@@ -69,23 +73,34 @@ public class ProcessManager {
                     && p.getState() != ProcessState.TERMINATED)
                 .findFirst().orElse(null);
             if (existing != null) {
-                return new Object[]{-1, existing.getPid()};  // 已运行，返回现有PID
+                eventService.warning("PROCESS_MGR",
+                    "启动失败：" + app.getName() + " 已在运行 (PID: " + existing.getPid() + ")，单实例限制");
+                return new Object[]{-1, existing.getPid()};
             }
         }
 
         // 创建主进程
         ProcessControlBlock mainProcess = createProcessInternal(app, 0, null);
         if (mainProcess == null) {
-            return null;  // 资源不足
+            eventService.error("MEMORY_MGR",
+                "启动失败：" + app.getName() + "，系统内存不足 (需要 " + app.getMemoryRequired() + "MB)");
+            return null;
         }
 
         // 自动 fork 子进程
         String[] childNames = CHILD_PROCESSES.get(app.name());
+        int childCount = 0;
         if (childNames != null) {
             for (int i = 0; i < childNames.length; i++) {
-                createChildProcess(childNames[i], app, mainProcess.getPid(), i);
+                ProcessControlBlock child = createChildProcess(childNames[i], app, mainProcess.getPid(), i);
+                if (child != null) childCount++;
             }
         }
+
+        eventService.info("PROCESS_MGR",
+            "启动进程 " + app.getName() + " (PID: " + mainProcess.getPid() + "), 分配内存 " + app.getMemoryRequired() + "MB" +
+            (childCount > 0 ? ", 自动创建 " + childCount + " 个子进程" : ""),
+            mainProcess.getPid(), app.getName());
 
         return new Object[]{mainProcess.getPid()};
     }
@@ -164,12 +179,15 @@ public class ProcessManager {
         ProcessControlBlock pcb = findProcess(pid);
         if (pcb == null) return false;
 
+        int freedMem = pcb.getCurrentMemoryUsage();
+
         // 找到所有子进程并一起结束
         List<ProcessControlBlock> children = processTable.stream()
             .filter(p -> p.getParentPid() == pid)
             .collect(Collectors.toList());
 
         for (ProcessControlBlock child : children) {
+            freedMem += child.getCurrentMemoryUsage();
             hardwarePool.freeMemory(child.getPid());
             hardwarePool.freeAllCpuCores(child.getPid());
             processTable.remove(child);
@@ -179,6 +197,11 @@ public class ProcessManager {
         hardwarePool.freeMemory(pid);
         hardwarePool.freeAllCpuCores(pid);
         processTable.remove(pcb);
+
+        eventService.warning("PROCESS_MGR",
+            "进程 " + pcb.getName() + " (PID: " + pid + ") 被终止, 回收内存 " + freedMem + "MB" +
+            (children.size() > 0 ? ", 连带终止 " + children.size() + " 个子进程" : ""),
+            pid, pcb.getName());
         return true;
     }
 
@@ -190,6 +213,9 @@ public class ProcessManager {
         if (pcb == null || pcb.getState() != ProcessState.RUNNING) return false;
         pcb.setState(ProcessState.BLOCKED);
         hardwarePool.freeAllCpuCores(pid);
+        eventService.warning("PROCESS_MGR",
+            "进程 " + pcb.getName() + " (PID: " + pid + ") 被挂起, 进入 BLOCKED 状态",
+            pid, pcb.getName());
         return true;
     }
 
@@ -202,6 +228,9 @@ public class ProcessManager {
         pcb.setState(ProcessState.RUNNING);
         int coreIndex = hardwarePool.allocateCpuCore(pid);
         pcb.setCoreIndex(coreIndex);
+        eventService.success("PROCESS_MGR",
+            "进程 " + pcb.getName() + " (PID: " + pid + ") 已恢复运行",
+            pid, pcb.getName());
         return true;
     }
 

@@ -5,6 +5,7 @@ import TaskBar from './components/Desktop/TaskBar'
 import Window from './components/Desktop/Window'
 import TaskManager from './components/TaskManager/TaskManager'
 import SchedulerLab from './components/SchedulerLab/SchedulerLab'
+import SystemLogViewer from './components/SystemLog/SystemLogViewer'
 
 const API_BASE = '/api'
 
@@ -61,6 +62,7 @@ function App() {
     const configs = {
       '内核算法实验室': { title: '内核算法实验室 v2.0', icon: '🧪', component: 'SchedulerLab', width: '100%', height: '100%' },
       '任务管理器': { title: '任务管理器', icon: '⚙️', component: 'TaskManager', width: 860, height: 560 },
+      '系统日志': { title: '系统事件查看器', icon: '📋', component: 'SystemLog', width: 900, height: 520 },
     }
     if (configs[appName]) return configs[appName]
     const app = availableApps.find(a => a.name === appName)
@@ -103,7 +105,8 @@ function App() {
     <div className="app-container">
       <Desktop apps={availableApps} onLaunchApp={launchApp}
         onOpenTaskManager={() => openWindow('任务管理器')}
-        onOpenKernelLab={() => openWindow('内核算法实验室')} />
+        onOpenKernelLab={() => openWindow('内核算法实验室')}
+        onOpenSystemLog={() => openWindow('系统日志')} />
 
       {windows.map(win => !win.minimized && (
         <Window key={win.id} id={win.id} title={win.title} icon={win.icon}
@@ -116,6 +119,7 @@ function App() {
             <TaskManager processes={sandboxProcesses} systemStatus={systemStatus}
               onTerminate={terminateProcess} onSuspend={suspendProcess} onResume={resumeProcess} />
           )}
+          {win.component === 'SystemLog' && <SystemLogViewer />}
           {win.component === 'AppProcess' && (
             <AppProcessView appName={win.title} pid={win.pid}
               process={sandboxProcesses.find(p => p.pid === win.pid)} onTerminate={terminateProcess} />

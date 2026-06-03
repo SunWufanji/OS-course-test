@@ -4,10 +4,11 @@ import DesktopIcon from './DesktopIcon'
 /**
  * 桌面组件 - 仿 Windows 桌面
  */
-function Desktop({ apps, onLaunchApp, onOpenTaskManager, onOpenKernelLab }) {
+function Desktop({ apps, onLaunchApp, onOpenTaskManager, onOpenKernelLab, onOpenSystemLog }) {
   // 系统应用
   const systemApps = [
     { name: '任务管理器', icon: '⚙️' },
+    { name: '系统日志', icon: '📋' },
     { name: '内核算法实验室', icon: '🧪' },
   ]
 
@@ -23,6 +24,7 @@ function Desktop({ apps, onLaunchApp, onOpenTaskManager, onOpenKernelLab }) {
             onDoubleClick={(name) => {
               if (name === '任务管理器') onOpenTaskManager()
               else if (name === '内核算法实验室') onOpenKernelLab()
+              else if (name === '系统日志') onOpenSystemLog()
               else onLaunchApp(name)
             }}
           />
