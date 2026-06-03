@@ -52,6 +52,10 @@ public class HardwarePool {
      * @return 是否分配成功
      */
     public synchronized boolean allocateMemory(int requiredSize, int pid, String processName) {
+        // 先检查总量是否足够
+        if (usedMemory + requiredSize > totalMemory) {
+            return false;
+        }
         for (int i = 0; i < memoryBlocks.size(); i++) {
             MemoryBlock block = memoryBlocks.get(i);
             if (block.canFit(requiredSize)) {
