@@ -157,6 +157,15 @@ function SchedulerLab() {
   }
   const stopPlay = () => { setIsPlaying(false); if(playIntervalRef.current) { clearInterval(playIntervalRef.current); playIntervalRef.current = null } }
 
+  // 删除进程
+  const deleteProcess = async (pid) => {
+    if (!confirm('确定删除这个进程？')) return
+    try {
+      await axios.delete(`${API_BASE}/processes/${pid}`)
+      fetchData()
+    } catch(e) { console.error(e) }
+  }
+
   useEffect(() => { fetchData(); fetchScenarios(); fetchHistory(); fetchProcessTree(); return () => stopPlay() }, [fetchData])
 
   const counts = { created: processes.filter(p=>p.state==='CREATED').length, ready: readyQueue.length, running: runningProcess?1:0, blocked: blockedQueue.length, terminated: processes.filter(p=>p.state==='TERMINATED').length }
@@ -167,7 +176,6 @@ function SchedulerLab() {
   return (
     <div className="app">
       <header className="titlebar">
-        <div className="traffic-lights"><div className="traffic-light close"></div><div className="traffic-light minimize"></div><div className="traffic-light maximize"></div></div>
         <div className="titlebar-tabs">
           {['all','ready','running','blocked','terminated'].map(tab => (
             <button key={tab} className={`titlebar-tab ${currentTab===tab?'active':''}`} onClick={()=>setCurrentTab(tab)}>
@@ -375,7 +383,7 @@ function SchedulerLab() {
               </div>
               <div className="table-wrapper">
                 <table className="process-table">
-                  <thead><tr><th>#</th><th>进程名</th><th>状态</th><th>优先级</th><th>到达</th><th>执行</th><th>剩余</th><th>进度</th><th>等待</th><th>周转</th><th>完成</th></tr></thead>
+                  <thead><tr><th>#</th><th>进程名</th><th>状态</th><th>优先级</th><th>到达</th><th>执行</th><th>剩余</th><th>进度</th><th>等待</th><th>周转</th><th>完成</th><th>操作</th></tr></thead>
                   <tbody>
                     {filteredProcesses.length===0?<tr><td colSpan="11" className="empty-state"><div className="empty-state-icon">📋</div><div>暂无进程</div></td></tr>:
                     filteredProcesses.map(p=>(
@@ -387,6 +395,7 @@ function SchedulerLab() {
                         <td>{p.remainingTime}</td>
                         <td><div className="mini-progress"><div className="mini-progress-fill" style={{width:`${((p.burstTime-p.remainingTime)/p.burstTime)*100}%`,background:p.color}}></div></div></td>
                         <td>{p.waitingTime}</td><td>{p.turnaroundTime||'-'}</td><td style={{color:'var(--text-3)'}}>{p.completionTime||'-'}</td>
+                        <td><button onClick={(e)=>{e.stopPropagation();deleteProcess(p.pid)}} style={{background:'var(--red-soft)',color:'var(--red)',border:'none',borderRadius:'4px',padding:'3px 8px',cursor:'pointer',fontSize:'11px'}}>删除</button></td>
                       </tr>
                     ))}
                   </tbody>
