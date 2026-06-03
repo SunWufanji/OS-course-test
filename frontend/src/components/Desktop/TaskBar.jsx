@@ -5,7 +5,7 @@ const DOCK_APPS = [
   { name: '任务管理器', icon: '⚙️', action: 'taskManager' },
   { name: '系统日志', icon: '📋', action: 'systemLog' },
   { name: '内核算法实验室', icon: '🧪', action: 'kernelLab' },
-  { name: 'CS:GO', icon: '/picture/csgo.png', app: 'CS:GO', isImage: true },
+  { name: 'CS:GO', icon: '/picture/CS2.jpg', app: 'CS:GO', isImage: true },
   { name: '绝地求生', icon: '🎯', app: '绝地求生' },
   { name: '我的世界', icon: '⛏️', app: '我的世界' },
   { name: 'Chrome', icon: '🌐', app: 'Chrome' },

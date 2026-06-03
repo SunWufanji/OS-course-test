@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react'
  * 窗口组件 — macOS 红绿灯风格
  */
 function Window({
-  id, title, icon, children,
+  id, title, icon, isImageIcon, children,
   x = 100, y = 50, width = 800, height = 600,
   maximized = false, isActive = false,
   onClose, onMinimize, onMaximize, onActivate
@@ -58,7 +58,7 @@ function Window({
           <button className="mac-tl-btn maximize" onClick={(e) => { e.stopPropagation(); onMaximize() }} />
         </div>
         <div className="mac-window-title">
-          <span>{icon}</span>
+          {isImageIcon ? <img src={icon} style={{ width: '16px', height: '16px', objectFit: 'contain' }} alt="" /> : <span>{icon}</span>}
           <span>{title}</span>
         </div>
         <div style={{ width: 56 }} /> {/* 平衡红绿灯宽度 */}

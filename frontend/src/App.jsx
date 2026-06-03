@@ -70,7 +70,10 @@ function App() {
     }
     if (configs[appName]) return configs[appName]
     const app = availableApps.find(a => a.name === appName)
-    return { title: appName, icon: app?.icon || '📱', component: 'AppProcess', width: 560, height: 400 }
+    const iconMap = { 'CS:GO': '/picture/CS2.jpg' }
+    const icon = iconMap[appName] || app?.icon || '📱'
+    const isImageIcon = !!iconMap[appName]
+    return { title: appName, icon, component: 'AppProcess', width: 560, height: 400, isImageIcon }
   }
 
   const openWindow = (appName, process) => {
@@ -113,7 +116,7 @@ function App() {
         onOpenSystemLog={() => openWindow('系统日志')} />
 
       {windows.map(win => !win.minimized && (
-        <Window key={win.id} id={win.id} title={win.title} icon={win.icon}
+        <Window key={win.id} id={win.id} title={win.title} icon={win.icon} isImageIcon={win.isImageIcon}
           x={win.x} y={win.y} width={win.width} height={win.height}
           maximized={win.maximized} isActive={activeWindowId === win.id}
           onClose={() => closeWindow(win.id)} onMinimize={() => minimizeWindow(win.id)}
