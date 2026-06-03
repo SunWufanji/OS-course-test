@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import axios from 'axios'
-import MFQPanel from './components/MFQPanel'
+import MFQPanel from '../MFQPanel'
 
 const API_BASE = '/api'
 const StateNames = { created: '新建', ready: '就绪', running: '运行', blocked: '阻塞', terminated: '结束' }
