@@ -407,7 +407,6 @@ function SchedulerLab() {
 
           </div>
         </div>
-      </div>
 
       {/* 甘特图 — 底部浮动面板，鼠标移到底部才显示 */}
       <GanttPanel ganttData={ganttData} currentTime={currentTime} stats={stats} currentAlgo={currentAlgo} mfqQueues={mfqQueues} processes={processes} runningProcess={runningProcess} />
