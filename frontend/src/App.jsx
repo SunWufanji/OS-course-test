@@ -141,7 +141,8 @@ function App() {
         onToggleControlCenter={() => setControlCenterOpen(!controlCenterOpen)}
         onToggleLauncher={() => setLauncherOpen(!launcherOpen)} />
 
-      <ControlCenter isOpen={controlCenterOpen} onClose={() => setControlCenterOpen(false)} systemStatus={systemStatus} />
+      <ControlCenter isOpen={controlCenterOpen} onClose={() => setControlCenterOpen(false)} systemStatus={systemStatus}
+        onOpenTaskManager={() => openWindow('任务管理器')} />
       <AppLauncher isOpen={launcherOpen} onClose={() => setLauncherOpen(false)}
         onLaunchApp={launchApp} onOpenTaskManager={() => openWindow('任务管理器')}
         onOpenKernelLab={() => openWindow('内核算法实验室')} onOpenSystemLog={() => openWindow('系统日志')} />

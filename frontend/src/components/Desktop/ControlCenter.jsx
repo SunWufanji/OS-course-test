@@ -20,7 +20,7 @@ function MiniRing({ value, label, color, size = 56 }) {
   )
 }
 
-function ControlCenter({ isOpen, onClose, systemStatus }) {
+function ControlCenter({ isOpen, onClose, systemStatus, onOpenTaskManager }) {
   const [time, setTime] = useState(new Date())
 
   useEffect(() => {
@@ -58,7 +58,8 @@ function ControlCenter({ isOpen, onClose, systemStatus }) {
         {/* 硬件监控 */}
         <div className="cc-section">
           <div className="cc-section-title">硬件监控</div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginBottom: '16px', cursor: 'pointer' }}
+            onClick={() => { onOpenTaskManager(); onClose(); }}>
             <MiniRing value={cpuUsage} label="CPU" color="#00f0ff" />
             <MiniRing value={memPercent} label="MEM" color="#ff2d7b" />
             <MiniRing value={diskAvg} label="DISK" color="#00ff88" />

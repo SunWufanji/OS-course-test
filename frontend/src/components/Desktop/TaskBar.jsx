@@ -96,7 +96,7 @@ function TaskBar({ windows, activeWindowId, systemStatus, onActivateWindow, onOp
         })}
         {/* 启动器按钮 */}
         <div className="dock-icon" title="全部应用" onClick={onToggleLauncher}>
-          <div className="dock-icon-img" style={{ fontSize: '24px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⊞</div>
+          <div className="dock-icon-img">⊞</div>
         </div>
       </div>
     </>
