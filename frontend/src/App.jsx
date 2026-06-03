@@ -73,7 +73,15 @@ function App() {
   const closeWindowByPid = (pid) => { setWindows(prev => prev.filter(w => w.pid !== pid)) }
   const minimizeWindow = (id) => { setWindows(prev => prev.map(w => w.id === id ? { ...w, minimized: true } : w)) }
   const maximizeWindow = (id) => { setWindows(prev => prev.map(w => w.id === id ? { ...w, maximized: !w.maximized } : w)) }
-  const activateWindow = (id) => { setActiveWindowId(id); setWindows(prev => prev.map(w => w.id === id ? { ...w, minimized: false } : w)) }
+  const activateWindow = (id) => {
+    setActiveWindowId(id)
+    setWindows(prev => {
+      const win = prev.find(w => w.id === id)
+      if (!win) return prev
+      const others = prev.filter(w => w.id !== id)
+      return [...others, { ...win, minimized: false }]
+    })
+  }
 
   useEffect(() => {
     fetchAvailableApps(); fetchSystemStatus(); fetchSandboxProcesses()
