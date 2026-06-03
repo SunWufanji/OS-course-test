@@ -20,9 +20,10 @@ const DOCK_APPS = [
   { name: '系统更新', icon: '🔄', app: '系统更新' },
 ]
 
-function TaskBar({ windows, activeWindowId, systemStatus, onActivateWindow, onOpenTaskManager, onOpenKernelLab, onOpenSystemLog, onLaunchApp, onReset, onToggleControlCenter, onToggleLauncher, toggleWindow }) {
+function TaskBar({ windows, activeWindowId, systemStatus, onActivateWindow, onOpenTaskManager, onOpenKernelLab, onOpenSystemLog, onLaunchApp, onReset, onToggleControlCenter, onToggleLauncher, toggleWindow, hasMaximized }) {
   const [time, setTime] = useState(new Date())
   const [showMenu, setShowMenu] = useState(false)
+  const [dockHovered, setDockHovered] = useState(false)
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000)
@@ -76,29 +77,33 @@ function TaskBar({ windows, activeWindowId, systemStatus, onActivateWindow, onOp
         </>
       )}
 
-      {/* 底部 Dock 栏 */}
-      <div className="mac-dock">
-        {DOCK_APPS.map(item => {
-          const running = isRunning(item.app || item.name)
-          return (
-            <div
-              key={item.name}
-              className="dock-icon"
-              title={item.name}
-              onClick={() => handleDockClick(item)}
-            >
-              {item.isImage ? (
-                <img src={item.icon} alt={item.name} className="dock-icon-img" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
-              ) : (
-                <div className="dock-icon-img">{item.icon}</div>
-              )}
-              {running && <div className="dock-dot" />}
-            </div>
-          )
-        })}
-        {/* 启动器按钮 */}
-        <div className="dock-icon" title="全部应用" onClick={onToggleLauncher}>
-          <div className="dock-icon-img">⊞</div>
+      {/* 底部 Dock 栏 — 全屏自动隐藏 */}
+      <div className={`dock-hitbox ${hasMaximized ? 'autohide' : ''} ${dockHovered ? 'reveal' : ''}`}
+        onMouseEnter={() => setDockHovered(true)}
+        onMouseLeave={() => setDockHovered(false)}>
+        <div className="mac-dock">
+          {DOCK_APPS.map(item => {
+            const running = isRunning(item.app || item.name)
+            return (
+              <div
+                key={item.name}
+                className="dock-icon"
+                title={item.name}
+                onClick={() => handleDockClick(item)}
+              >
+                {item.isImage ? (
+                  <img src={item.icon} alt={item.name} className="dock-icon-img" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+                ) : (
+                  <div className="dock-icon-img">{item.icon}</div>
+                )}
+                {running && <div className="dock-dot" />}
+              </div>
+            )
+          })}
+          {/* 启动器按钮 */}
+          <div className="dock-icon" title="全部应用" onClick={onToggleLauncher}>
+            <div className="dock-icon-img">⊞</div>
+          </div>
         </div>
       </div>
     </>

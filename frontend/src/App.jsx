@@ -143,6 +143,7 @@ function App() {
         onReset={resetSandbox}
         onToggleControlCenter={() => setControlCenterOpen(!controlCenterOpen)}
         onToggleLauncher={() => setLauncherOpen(!launcherOpen)}
+        hasMaximized={windows.some(w => w.maximized)}
         toggleWindow={(title) => {
           const win = windows.find(w => w.title.includes(title))
           if (win) {

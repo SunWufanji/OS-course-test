@@ -832,7 +832,21 @@ html, body, #root {
 .mac-menu-item:hover { background: rgba(0,240,255,0.08); color: #e0f0ff; }
 .mac-menu-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 8px; }
 
-/* ========== macOS Dock 栏 ========== */
+/* ========== macOS Dock 栏（全屏自动隐藏） ========== */
+.dock-hitbox {
+  position: fixed; bottom: 0; left: 0; width: 100%; height: 80px;
+  display: flex; justify-content: center; align-items: flex-end;
+  padding-bottom: 8px; z-index: 1000; pointer-events: none;
+}
+.dock-hitbox::before {
+  content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 10px;
+  pointer-events: auto; cursor: default;
+}
+.dock-hitbox .mac-dock { pointer-events: auto; transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1); }
+.dock-hitbox.autohide .mac-dock { transform: translateX(-50%) translateY(calc(100% + 30px)); }
+.dock-hitbox.autohide.reveal .mac-dock { transform: translateX(-50%) translateY(-10px); }
+.dock-hitbox:not(.autohide) .mac-dock { transform: translateX(-50%); }
+
 .mac-dock {
   position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
   display: flex; align-items: flex-end; gap: 4px;
