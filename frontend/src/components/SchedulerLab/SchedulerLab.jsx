@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import axios from 'axios'
+import GanttPanel from './GanttPanel'
 import MFQPanel from '../MFQPanel'
 
 const API_BASE = '/api'
@@ -241,7 +242,7 @@ function SchedulerLab() {
             <div className="algo-grid">
               {['FCFS','SJF','SRTN','RR','Priority','PreemptivePriority','MFQ'].map(a=>(<div key={a} className={`algo-option ${currentAlgo===a?'active':''}`} onClick={()=>setScheduler(a)}>{{FCFS:'FCFS',SJF:'SJF',SRTN:'SRTN',RR:'RR',Priority:'优先级',PreemptivePriority:'抢占优先级',MFQ:'MFQ'}[a]}</div>))}
             </div>
-            <div className="control-input" style={{marginTop:'8px'}}><div className="control-label">时间片(RR)</div><input type="number" className="control-field" value={inputQuantum} onChange={e=>setInputQuantum(e.target.value)} min="1" /></div>
+            {currentAlgo === 'RR' && <div className="control-input" style={{marginTop:'8px'}}><div className="control-label">时间片(RR)</div><input type="number" className="control-field" value={inputQuantum} onChange={e=>setInputQuantum(e.target.value)} min="1" /></div>}
           </div>
         </aside>
 
@@ -404,58 +405,13 @@ function SchedulerLab() {
             </>
           )}
 
-          {/* 甘特图 — 移到主内容区进程表格下方 */}
-          <div style={{padding:'12px 16px',borderTop:'1px solid var(--border)'}}>
-            <div className="gantt-header">
-              <div className="gantt-title">CPU 调度甘特图</div>
-            <div className="gantt-legend">{[...new Set(ganttData.map(d=>d.pid))].map(pid=>{const d=ganttData.find(x=>x.pid===pid);return<div key={pid} className="gantt-legend-item"><div className="gantt-legend-dot" style={{background:d.color}}></div>{d.name}</div>})}</div>
           </div>
-          <div className="gantt-chart">
-            <div className="gantt-timeline">
-              {ganttData.length===0||currentTime===0?(
-                <div className="gantt-empty">点击"开始模拟"查看</div>
-              ):(
-                (() => {
-                  // 构建完整的甘特图，包含空闲时间
-                  const blocks = [];
-                  let lastEnd = 0;
-                  // 按开始时间排序
-                  const sorted = [...ganttData].sort((a,b) => a.start - b.start);
-                  sorted.forEach((d, i) => {
-                    // 如果有空闲时间，添加空闲块
-                    if (d.start > lastEnd) {
-                      blocks.push({type:'idle', start:lastEnd, end:d.start, width:((d.start-lastEnd)/currentTime)*100});
-                    }
-                    // 添加进程块
-                    blocks.push({type:'process', ...d, width:((d.end-d.start)/currentTime)*100});
-                    lastEnd = d.end;
-                  });
-                  return blocks.map((b, i) => (
-                    b.type === 'idle' ? (
-                      <div key={i} style={{width:`${b.width}%`, background:'transparent', borderRight:'1px dashed rgba(255,255,255,0.1)'}}></div>
-                    ) : (
-                      <div key={i} className="gantt-block" style={{width:`${b.width}%`, background:b.color}}>{b.name}</div>
-                    )
-                  ));
-                })()
-              )}
-            </div>
-            <div className="gantt-axis" style={{display:'flex',justifyContent:'space-between',position:'relative'}}>
-              {currentTime>0 && (()=>{
-                const maxTicks = 20; // 最多显示20个刻度
-                const step = currentTime <= maxTicks ? 1 : Math.ceil(currentTime / maxTicks);
-                const ticks = [];
-                for(let i = 0; i <= currentTime; i += step) {
-                  ticks.push(i);
-                }
-                if(ticks[ticks.length-1] !== currentTime) ticks.push(currentTime);
-                return ticks.map((t, idx) => (
-                  <span key={idx} className="gantt-tick" style={{position:'absolute',left:`${(t/currentTime)*100}%`,transform:'translateX(-50%)'}}>{t}</span>
-                ));
-              })()}
-            </div>
-          </div>
-          </div>
+        </div>
+      </div>
+
+      {/* 甘特图 — 底部浮动面板，鼠标移到底部才显示 */}
+      <GanttPanel ganttData={ganttData} currentTime={currentTime} stats={stats} currentAlgo={currentAlgo} mfqQueues={mfqQueues} processes={processes} runningProcess={runningProcess} />
+    </div>
 
           {/* 调度统计 */}
           <div style={{padding:'12px 16px',borderTop:'1px solid var(--border)'}}>

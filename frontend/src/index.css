@@ -966,3 +966,36 @@ html, body, #root {
   0%, 100% { opacity: 0.4; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.2); }
 }
+
+/* ========== 底部甘特图浮动面板 ========== */
+.gantt-panel-hitbox {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 140px;
+  z-index: 500; pointer-events: none;
+}
+.gantt-panel-hitbox::before {
+  content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 12px;
+  pointer-events: auto; cursor: default;
+}
+.gantt-panel {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(15,15,25,0.9); backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 10px 20px 8px; pointer-events: auto;
+  transform: translateY(calc(100% - 12px));
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.gantt-panel-hitbox.reveal .gantt-panel {
+  transform: translateY(0);
+}
+.gantt-panel .gantt-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.gantt-panel .gantt-title { font-size: 11px; font-weight: 600; color: var(--text-2); }
+.gantt-panel .gantt-legend { display: flex; gap: 10px; }
+.gantt-panel .gantt-legend-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-3); }
+.gantt-panel .gantt-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+.gantt-panel .gantt-chart { display: flex; flex-direction: column; gap: 4px; }
+.gantt-panel .gantt-timeline { display: flex; height: 28px; background: var(--bg-2); border-radius: 4px; overflow: hidden; }
+.gantt-panel .gantt-block { display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: white; transition: all 0.2s; }
+.gantt-panel .gantt-block:hover { filter: brightness(1.15); }
+.gantt-panel .gantt-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-3); font-size: 11px; }
+.gantt-panel .gantt-axis { display: flex; gap: 2px; }
+.gantt-panel .gantt-tick { font-size: 9px; color: var(--text-3); font-variant-numeric: tabular-nums; }
