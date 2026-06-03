@@ -7,7 +7,7 @@ const ALL_APPS = [
   { name: '系统日志', icon: '📋', action: 'systemLog', category: '系统工具' },
   { name: '内核算法实验室', icon: '🧪', action: 'kernelLab', category: '系统工具' },
   // 游戏
-  { name: 'CS:GO', icon: '🎮', app: 'CS:GO', category: '游戏' },
+  { name: 'CS:GO', icon: '/picture/CS2.jpg', app: 'CS:GO', category: '游戏', isImage: true },
   { name: '绝地求生', icon: '🎯', app: '绝地求生', category: '游戏' },
   { name: '我的世界', icon: '⛏️', app: '我的世界', category: '游戏' },
   // 浏览器
@@ -70,7 +70,11 @@ function AppLauncher({ isOpen, onClose, onLaunchApp, onOpenTaskManager, onOpenKe
         <div className="launcher-grid">
           {filtered.map(app => (
             <div key={app.name} className="launcher-app" onClick={() => handleLaunch(app)}>
-              <div className="launcher-app-icon">{app.icon}</div>
+              {app.isImage ? (
+                <img src={app.icon} alt={app.name} className="launcher-app-icon" style={{ width: '48px', height: '48px', objectFit: 'contain' }} />
+              ) : (
+                <div className="launcher-app-icon">{app.icon}</div>
+              )}
               <div className="launcher-app-name">{app.name}</div>
               <div className="launcher-app-category">{app.category}</div>
             </div>

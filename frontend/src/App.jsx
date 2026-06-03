@@ -82,7 +82,7 @@ function App() {
     if (existing) { activateWindow(existing.id); return }
     const id = nextWindowId.current++
     setWindows(prev => [...prev, {
-      id, title: config.title, icon: config.icon, component: config.component, pid: process?.pid,
+      id, title: config.title, icon: config.icon, isImageIcon: config.isImageIcon, component: config.component, pid: process?.pid,
       x: 60 + (prev.length % 6) * 30, y: 20 + (prev.length % 6) * 30,
       width: config.width, height: config.height, minimized: false, maximized: false
     }])
