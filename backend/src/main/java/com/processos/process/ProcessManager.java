@@ -50,7 +50,7 @@ public class ProcessManager {
 
         // 3. 创建进程控制块
         ProcessControlBlock pcb = new ProcessControlBlock(
-            pid, app.getName(), app.getMemoryRequired(), 3, 0, color
+            pid, app.getName(), 0, 3, 0, color
         );
         pcb.setState(ProcessState.RUNNING);
         pcb.setAppType(app.name());

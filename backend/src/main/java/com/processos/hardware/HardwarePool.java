@@ -19,8 +19,8 @@ public class HardwarePool {
     private final int[] corePid = new int[8];            // 每个核心上运行的进程 PID
 
     // ==================== 内存配置 ====================
-    private final int totalMemory = 1024;                // 总内存 1024MB
-    private int usedMemory = 256;                        // 已用内存（系统预留 256MB）
+    private final int totalMemory = 16384;               // 总内存 16GB
+    private int usedMemory = 1024;                       // 已用内存（系统预留 1GB）
     private final List<MemoryBlock> memoryBlocks;        // 内存块列表
 
     // ==================== IO 设备 ====================
