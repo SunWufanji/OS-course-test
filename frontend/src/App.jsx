@@ -29,8 +29,18 @@ function App() {
   const launchApp = async (appName) => {
     try {
       const res = await axios.post(`${API_BASE}/process/launch`, { appName })
-      if (res.data.success) { openWindow(appName, res.data.process); fetchSandboxProcesses() }
-      else alert(res.data.error || '启动失败')
+      if (res.data.success) {
+        openWindow(appName, res.data.process)
+        fetchSandboxProcesses()
+      } else if (res.data.alreadyRunning) {
+        // 已运行，激活对应窗口
+        const existingPid = res.data.existingPid
+        const win = windows.find(w => w.pid === existingPid)
+        if (win) activateWindow(win.id)
+        else openWindow(appName, { pid: existingPid })
+      } else {
+        alert(res.data.error || '启动失败')
+      }
     } catch (err) { console.error(err) }
   }
 

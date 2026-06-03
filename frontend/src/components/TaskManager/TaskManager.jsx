@@ -145,6 +145,8 @@ function TaskManager({ processes, systemStatus, onTerminate, onSuspend, onResume
   const [tab, setTab] = useState('processes')
   const [sortBy, setSortBy] = useState('pid')
   const [sortDir, setSortDir] = useState('asc')
+  const [searchText, setSearchText] = useState('')
+  const [expandedTrees, setExpandedTrees] = useState(new Set())
 
   const cpuHistoryRef = useRef(Array(30).fill(0))
   const memHistoryRef = useRef(Array(30).fill(0))
@@ -166,17 +168,46 @@ function TaskManager({ processes, systemStatus, onTerminate, onSuspend, onResume
     setMemHistory([...memHistoryRef.current])
   }, [cpuUsage, memPercent])
 
-  const sortedProcesses = [...processes].sort((a, b) => {
+  // 搜索 + 排序
+  const filteredProcesses = processes.filter(p => {
+    if (!searchText) return true
+    const s = searchText.toLowerCase()
+    return (p.name && p.name.toLowerCase().includes(s))
+      || String(p.pid).includes(s)
+      || (p.appType && p.appType.toLowerCase().includes(s))
+  })
+  const sortedProcesses = [...filteredProcesses].sort((a, b) => {
     let va = a[sortBy], vb = b[sortBy]
     if (typeof va === 'string') { va = va.toLowerCase(); vb = vb?.toLowerCase() || '' }
     if (va == null) va = 0; if (vb == null) vb = 0
     return sortDir === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1)
   })
+
+  // 构建进程树（根进程 + 子进程）
+  const roots = sortedProcesses.filter(p => !p.parentPid || p.parentPid <= 0)
+  const childrenMap = {}
+  sortedProcesses.filter(p => p.parentPid && p.parentPid > 0).forEach(p => {
+    if (!childrenMap[p.parentPid]) childrenMap[p.parentPid] = []
+    childrenMap[p.parentPid].push(p)
+  })
+
+  // 同名进程同色（按 appType 分组颜色）
+  const appColorMap = {}
+  const appColors = [CYBER.cyan, '#8b5cf6', CYBER.magenta, CYBER.green, CYBER.yellow]
+  let colorIdx = 0
+  processes.forEach(p => {
+    if (p.appType && !appColorMap[p.appType]) {
+      appColorMap[p.appType] = appColors[colorIdx % appColors.length]
+      colorIdx++
+    }
+  })
   const handleSort = (field) => {
     if (sortBy === field) setSortDir(p => p === 'asc' ? 'desc' : 'asc')
     else { setSortBy(field); setSortDir('asc') }
   }
-  const SortIcon = ({ field }) => sortBy !== field ? <span style={{ opacity: 0.3 }}>↕</span> : <span>{sortDir === 'asc' ? '↑' : '↓'}</span>
+  const SortIcon = ({ field }) => sortBy !== field
+    ? <span style={{ opacity: 0.3, fontSize: '10px' }}>↕</span>
+    : <span style={{ color: CYBER.cyan, textShadow: `0 0 4px ${CYBER.cyan}60` }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
 
   const MEM_BLOCKS = 64
   const blockSize = memTotal / MEM_BLOCKS
@@ -201,6 +232,17 @@ function TaskManager({ processes, systemStatus, onTerminate, onSuspend, onResume
       {/* ===== 进程列表 ===== */}
       {tab === 'processes' && (
         <div style={{ flex: 1, overflow: 'auto' }}>
+          {/* 搜索栏 */}
+          <div style={{ padding: '8px 12px', background: 'rgba(0,0,0,0.2)', borderBottom: `1px solid ${CYBER.border}`, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '12px', color: CYBER.cyan }}>🔍</span>
+            <input type="text" placeholder="搜索进程名称、PID..." value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              style={{ flex: 1, padding: '6px 10px', background: 'rgba(0,240,255,0.05)', border: `1px solid ${CYBER.border}`,
+                borderRadius: '4px', color: CYBER.text, fontSize: '12px', outline: 'none' }} />
+            {searchText && <button onClick={() => setSearchText('')}
+              style={{ background: 'none', border: 'none', color: CYBER.textDim, cursor: 'pointer', fontSize: '14px' }}>✕</button>}
+            <span style={{ fontSize: '11px', color: CYBER.textDim }}>{filteredProcesses.length} 项</span>
+          </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
             <thead>
               <tr style={{ background: 'rgba(0,240,255,0.03)', position: 'sticky', top: 0 }}>
@@ -212,51 +254,81 @@ function TaskManager({ processes, systemStatus, onTerminate, onSuspend, onResume
                   { key: 'actions', label: '操作', width: 120 },
                 ].map(col => (
                   <th key={col.key} onClick={() => col.key !== 'icon' && col.key !== 'actions' && handleSort(col.key)}
-                    style={{ padding: '8px 10px', textAlign: 'left', color: CYBER.textDim, fontWeight: 500, width: col.width,
+                    style={{ padding: '8px 10px', textAlign: 'left', color: sortBy === col.key ? CYBER.cyan : CYBER.textDim,
+                      fontWeight: 500, width: col.width,
                       cursor: col.key !== 'icon' && col.key !== 'actions' ? 'pointer' : 'default', userSelect: 'none',
-                      borderBottom: `1px solid ${CYBER.border}` }}>
+                      borderBottom: sortBy === col.key ? `2px solid ${CYBER.cyan}` : `1px solid ${CYBER.border}`,
+                      textShadow: sortBy === col.key ? `0 0 4px ${CYBER.cyan}60` : 'none' }}>
                     {col.label} <SortIcon field={col.key} />
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {sortedProcesses.length === 0 ? (
+              {roots.length === 0 ? (
                 <tr><td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: CYBER.textDim }}>
                   暂无运行中的进程<br /><span style={{ fontSize: '11px' }}>双击桌面图标启动应用</span>
                 </td></tr>
-              ) : sortedProcesses.map(p => (
-                <tr key={p.pid} style={{ borderBottom: `1px solid ${CYBER.border}` }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,240,255,0.03)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  <td style={{ padding: '8px 12px', textAlign: 'center' }}>{p.icon || '📱'}</td>
-                  <td style={{ padding: '8px 12px', fontWeight: 500 }}>{p.name}</td>
-                  <td style={{ padding: '8px 12px', color: CYBER.textDim }}>{p.pid}</td>
-                  <td style={{ padding: '8px 12px' }}>
-                    <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '11px',
-                      background: p.state === 'RUNNING' ? CYBER.greenDim : CYBER.yellowDim,
-                      color: p.state === 'RUNNING' ? CYBER.green : CYBER.yellow,
-                      textShadow: `0 0 6px ${p.state === 'RUNNING' ? CYBER.green : CYBER.yellow}60` }}>
-                      {p.state === 'RUNNING' ? '●运行' : '●挂起'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '8px 12px' }}><CyberValue value={p.cpuUsage?.toFixed(1) || 0} unit="%" color={CYBER.cyan} size="12px" /></td>
-                  <td style={{ padding: '8px 12px' }}><CyberValue value={p.currentMemoryUsage || 0} unit="MB" color={CYBER.magenta} size="12px" /></td>
-                  <td style={{ padding: '8px 12px', color: CYBER.textDim }}>{p.diskRead || 0}MB/s</td>
-                  <td style={{ padding: '8px 12px', color: CYBER.textDim }}>{p.networkSpeed || 0}KB/s</td>
-                  <td style={{ padding: '8px 12px' }}>
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      {p.state === 'RUNNING' ? (
-                        <button onClick={() => onSuspend(p.pid)} style={{ padding: '3px 8px', background: CYBER.yellowDim, color: CYBER.yellow, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>挂起</button>
-                      ) : (
-                        <button onClick={() => onResume(p.pid)} style={{ padding: '3px 8px', background: CYBER.greenDim, color: CYBER.green, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>恢复</button>
-                      )}
-                      <button onClick={() => { if (confirm(`确定结束 ${p.name}?`)) onTerminate(p.pid) }}
-                        style={{ padding: '3px 8px', background: 'rgba(255,51,51,0.15)', color: CYBER.red, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>结束</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              ) : roots.map(root => {
+                const kids = childrenMap[root.pid] || []
+                const isExpanded = expandedTrees.has(root.pid)
+                const hasChildren = kids.length > 0
+                const processColor = appColorMap[root.appType] || CYBER.cyan
+
+                const renderRow = (p, depth = 0, isChild = false) => (
+                  <tr key={p.pid} style={{ borderBottom: `1px solid ${CYBER.border}`, background: isChild ? 'rgba(0,240,255,0.02)' : 'transparent' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,240,255,0.04)'}
+                    onMouseLeave={e => e.currentTarget.style.background = isChild ? 'rgba(0,240,255,0.02)' : 'transparent'}>
+                    <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                      {depth > 0 && <span style={{ color: CYBER.textDim, fontSize: '11px' }}>{'│─'}</span>}
+                      {!depth && (hasChildren ? (
+                        <span onClick={() => { const next = new Set(expandedTrees); isExpanded ? next.delete(p.pid) : next.add(p.pid); setExpandedTrees(next) }}
+                          style={{ cursor: 'pointer', color: CYBER.cyan, fontSize: '12px', userSelect: 'none' }}>{isExpanded ? '▼' : '▶'}</span>
+                      ) : <span style={{ color: 'transparent', fontSize: '12px' }}>●</span>)}
+                    </td>
+                    <td style={{ padding: '8px 12px', fontWeight: isChild ? 400 : 500, paddingLeft: `${12 + depth * 16}px` }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ color: processColor, fontSize: '11px', textShadow: `0 0 4px ${processColor}60` }}>
+                          {p.icon || '📱'}
+                        </span>
+                        {p.name}
+                        {hasChildren && !isChild && <span style={{ fontSize: '10px', color: CYBER.textDim, background: 'rgba(0,240,255,0.08)', padding: '1px 5px', borderRadius: '3px' }}>{kids.length} 子进程</span>}
+                      </span>
+                    </td>
+                    <td style={{ padding: '8px 12px', color: CYBER.textDim }}>{p.pid}</td>
+                    <td style={{ padding: '8px 12px' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '11px',
+                        background: p.state === 'RUNNING' ? CYBER.greenDim : CYBER.yellowDim,
+                        color: p.state === 'RUNNING' ? CYBER.green : CYBER.yellow,
+                        textShadow: `0 0 6px ${p.state === 'RUNNING' ? CYBER.green : CYBER.yellow}60` }}>
+                        {p.state === 'RUNNING' ? '●运行' : '●挂起'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '8px 12px' }}><CyberValue value={p.cpuUsage?.toFixed(1) || 0} unit="%" color={CYBER.cyan} size="12px" /></td>
+                    <td style={{ padding: '8px 12px' }}><CyberValue value={p.currentMemoryUsage || 0} unit="MB" color={CYBER.magenta} size="12px" /></td>
+                    <td style={{ padding: '8px 12px', color: CYBER.textDim }}>{p.diskRead || 0}MB/s</td>
+                    <td style={{ padding: '8px 12px', color: CYBER.textDim }}>{p.networkSpeed || 0}KB/s</td>
+                    <td style={{ padding: '8px 12px' }}>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        {p.state === 'RUNNING' ? (
+                          <button onClick={() => onSuspend(p.pid)} style={{ padding: '3px 8px', background: CYBER.yellowDim, color: CYBER.yellow, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>挂起</button>
+                        ) : (
+                          <button onClick={() => onResume(p.pid)} style={{ padding: '3px 8px', background: CYBER.greenDim, color: CYBER.green, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>恢复</button>
+                        )}
+                        <button onClick={() => { if (confirm(`确定结束 ${p.name}?`)) onTerminate(p.pid) }}
+                          style={{ padding: '3px 8px', background: 'rgba(255,51,51,0.15)', color: CYBER.red, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>结束</button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+
+                return (
+                  <React.Fragment key={root.pid}>
+                    {renderRow(root)}
+                    {isExpanded && kids.map(child => renderRow(child, 1, true))}
+                  </React.Fragment>
+                )
+              })}
             </tbody>
           </table>
         </div>
