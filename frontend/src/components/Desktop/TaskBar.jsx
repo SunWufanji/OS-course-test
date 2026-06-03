@@ -47,16 +47,23 @@ function TaskBar({ windows, activeWindowId, systemStatus, runningProcesses, onAc
         </div>
       )}
 
-      {/* 运行中的应用 */}
+      {/* 运行中的应用 — 居中显示 */}
       <div className="taskbar-apps">
         {windows.map(win => (
           <button
             key={win.id}
             className={`taskbar-app ${activeWindowId === win.id && !win.minimized ? 'active' : ''}`}
             onClick={() => onActivateWindow(win.id)}
+            title={win.title}
           >
-            <span>{win.icon}</span>
-            <span className="taskbar-app-title">{win.title}</span>
+            <span style={{ fontSize: '16px' }}>{win.icon}</span>
+            {/* 运行中指示灯 */}
+            <div style={{
+              width: '4px', height: '4px', borderRadius: '50%',
+              background: activeWindowId === win.id && !win.minimized ? '#00f0ff' : 'rgba(255,255,255,0.3)',
+              boxShadow: activeWindowId === win.id && !win.minimized ? '0 0 6px #00f0ff' : 'none',
+              animation: 'breathe 2s ease-in-out infinite'
+            }} />
           </button>
         ))}
       </div>

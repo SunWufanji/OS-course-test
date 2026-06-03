@@ -728,16 +728,33 @@ html, body, #root {
 /* ========== WebOS 桌面系统 ========== */
 .app-container { position: relative; width: 100%; height: 100vh; overflow: hidden; }
 
+/* 弥散渐变壁纸 (Mesh Gradient) */
 .desktop {
   position: absolute; inset: 0; bottom: 48px;
-  background: radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.1) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 80%, rgba(6,182,212,0.08) 0%, transparent 50%),
-    linear-gradient(180deg, #0a0a0f 0%, #0f0f1a 50%, #0a0a14 100%);
-  padding: 24px 32px; display: flex; flex-direction: column; overflow: auto;
+  background-color: #030812;
+  background-image:
+    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(225,39%,30%,1) 0, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(339,49%,30%,1) 0, transparent 50%),
+    radial-gradient(at 80% 50%, hsla(180,60%,15%,1) 0, transparent 40%);
+  padding: 20px; display: flex; overflow: hidden;
 }
-.desktop-icons { display: grid; grid-template-columns: repeat(auto-fill, 90px); grid-auto-rows: 100px; gap: 8px; justify-content: start; }
-.desktop-divider { width: 1px; height: 80px; background: rgba(255,255,255,0.1); margin: 10px 12px; align-self: center; }
+
+/* 纵向图标布局 */
+.desktop-icons-col {
+  display: flex; flex-direction: column; gap: 8px;
+  width: 100px; flex-shrink: 0; overflow-y: auto; overflow-x: hidden;
+  padding-right: 8px;
+}
+.desktop-icons-col::-webkit-scrollbar { width: 3px; }
+.desktop-icons-col::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.desktop-icons-section { display: flex; flex-direction: column; gap: 4px; }
+.desktop-section-label {
+  font-size: 9px; color: rgba(255,255,255,0.2); letter-spacing: 2px;
+  text-transform: uppercase; padding: 4px 8px; margin-bottom: 2px;
+}
+.desktop-section-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 8px; }
 .desktop-watermark { position: absolute; bottom: 60px; right: 40px; text-align: right; }
 
 .desktop-icon {
@@ -817,3 +834,9 @@ html, body, #root {
 .memory-cell.free { background: rgba(255,255,255,0.05); }
 .memory-cell.used { animation: memPulse 2s ease-in-out infinite; }
 @keyframes memPulse { 0%,100% { opacity: 0.8; } 50% { opacity: 1; } }
+
+/* 呼吸灯动画 */
+@keyframes breathe {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}

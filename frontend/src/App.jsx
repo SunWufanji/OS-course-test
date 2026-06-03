@@ -103,7 +103,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <Desktop apps={availableApps} onLaunchApp={launchApp}
+      <Desktop apps={availableApps} onLaunchApp={launchApp} systemStatus={systemStatus}
         onOpenTaskManager={() => openWindow('任务管理器')}
         onOpenKernelLab={() => openWindow('内核算法实验室')}
         onOpenSystemLog={() => openWindow('系统日志')} />
