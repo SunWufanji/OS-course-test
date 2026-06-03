@@ -724,3 +724,96 @@ html, body, #root {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--bg-4); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+/* ========== WebOS 桌面系统 ========== */
+.app-container { position: relative; width: 100%; height: 100vh; overflow: hidden; }
+
+.desktop {
+  position: absolute; inset: 0; bottom: 48px;
+  background: radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(6,182,212,0.08) 0%, transparent 50%),
+    linear-gradient(180deg, #0a0a0f 0%, #0f0f1a 50%, #0a0a14 100%);
+  padding: 24px 32px; display: flex; flex-direction: column; overflow: auto;
+}
+.desktop-icons { display: grid; grid-template-columns: repeat(auto-fill, 90px); grid-auto-rows: 100px; gap: 8px; justify-content: start; }
+.desktop-divider { width: 1px; height: 80px; background: rgba(255,255,255,0.1); margin: 10px 12px; align-self: center; }
+.desktop-watermark { position: absolute; bottom: 60px; right: 40px; text-align: right; }
+
+.desktop-icon {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px 8px; border-radius: 8px; cursor: pointer; transition: all 0.2s; user-select: none;
+}
+.desktop-icon:hover { background: rgba(255,255,255,0.06); }
+.desktop-icon:active { transform: scale(0.95); }
+.desktop-icon-img { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 32px; transition: all 0.25s; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+.desktop-icon:hover .desktop-icon-img { transform: scale(1.12) translateY(-3px); filter: drop-shadow(0 4px 12px rgba(99,102,241,0.4)); }
+.desktop-icon-label { font-size: 11px; color: #e4e4e7; text-align: center; text-shadow: 0 1px 4px rgba(0,0,0,0.6); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 窗口 */
+.window {
+  position: absolute; background: rgba(20,20,28,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  display: flex; flex-direction: column; overflow: hidden; z-index: 100; min-width: 400px; min-height: 300px;
+}
+.window.active { box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.2); }
+.window-titlebar {
+  display: flex; align-items: center; justify-content: space-between; padding: 0 12px; height: 36px;
+  background: rgba(0,0,0,0.2); cursor: move; user-select: none; flex-shrink: 0;
+}
+.window-title { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: var(--text-1); }
+.window-icon { font-size: 14px; }
+.window-controls { display: flex; gap: 2px; }
+.window-btn { width: 28px; height: 24px; border: none; background: transparent; color: var(--text-2); border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.window-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-0); }
+.window-btn.close:hover { background: rgba(239,68,68,0.8); color: white; }
+.window-content { flex: 1; overflow: hidden; min-height: 0; }
+
+/* 任务栏 */
+.taskbar {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 48px;
+  background: rgba(15,15,22,0.75); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; padding: 0 8px; z-index: 1000;
+}
+.taskbar-start { width: 40px; height: 36px; border: none; background: transparent; color: var(--text-0); border-radius: 6px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.taskbar-start:hover { background: rgba(255,255,255,0.08); }
+.taskbar-apps { flex: 1; display: flex; align-items: center; gap: 4px; padding: 0 12px; overflow-x: auto; }
+.taskbar-app { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border: none; background: transparent; color: var(--text-2); border-radius: 6px; cursor: pointer; font-size: 12px; white-space: nowrap; transition: all 0.15s; height: 32px; }
+.taskbar-app:hover { background: rgba(255,255,255,0.08); color: var(--text-0); }
+.taskbar-app.active { background: rgba(99,102,241,0.15); color: var(--accent); border-bottom: 2px solid var(--accent); }
+.taskbar-app-title { max-width: 100px; overflow: hidden; text-overflow: ellipsis; }
+
+/* 系统托盘 */
+.taskbar-tray { display: flex; align-items: center; gap: 12px; padding: 0 12px; height: 100%; }
+.tray-item { display: flex; align-items: center; gap: 6px; }
+.tray-label { font-size: 10px; color: var(--text-3); font-weight: 500; }
+.tray-bar { width: 48px; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+.tray-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+.tray-bar-fill.cpu { background: linear-gradient(90deg, #06b6d4, #3b82f6); }
+.tray-bar-fill.mem { background: linear-gradient(90deg, #f43f5e, #ec4899); }
+.tray-value { font-size: 11px; color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 32px; }
+.tray-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.08); }
+.tray-clock { font-size: 12px; color: var(--text-1); font-variant-numeric: tabular-nums; }
+
+/* 开始菜单 */
+.start-menu { position: absolute; bottom: 52px; left: 8px; width: 240px; background: rgba(20,20,28,0.85); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; box-shadow: 0 12px 48px rgba(0,0,0,0.5); z-index: 1001; overflow: hidden; }
+.start-menu-header { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.start-menu-items { padding: 8px; }
+.start-menu-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 6px; cursor: pointer; color: var(--text-1); font-size: 13px; transition: all 0.15s; }
+.start-menu-item:hover { background: rgba(255,255,255,0.06); color: var(--text-0); }
+.start-menu-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 8px; }
+
+/* 窗口动画 */
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+.window { animation: fadeIn 0.2s ease-out; }
+
+/* 甘特图扫描线 */
+@keyframes scanline { from { left: 0; } to { left: 100%; } }
+.gantt-scanline { position: absolute; top: 0; bottom: 0; width: 2px; background: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.6); z-index: 10; transition: left 0.3s linear; }
+
+/* 内存方块 */
+.memory-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 2px; }
+.memory-cell { aspect-ratio: 1; border-radius: 2px; transition: all 0.3s; }
+.memory-cell.free { background: rgba(255,255,255,0.05); }
+.memory-cell.used { animation: memPulse 2s ease-in-out infinite; }
+@keyframes memPulse { 0%,100% { opacity: 0.8; } 50% { opacity: 1; } }
