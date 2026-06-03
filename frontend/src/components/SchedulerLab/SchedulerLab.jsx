@@ -403,13 +403,11 @@ function SchedulerLab() {
               </div>
             </>
           )}
-        </div>
-      </div>
 
-      <div className="bottom-panel">
-        <div className="gantt-section">
-          <div className="gantt-header">
-            <div className="gantt-title">CPU 调度甘特图</div>
+          {/* 甘特图 — 移到主内容区进程表格下方 */}
+          <div style={{padding:'12px 16px',borderTop:'1px solid var(--border)'}}>
+            <div className="gantt-header">
+              <div className="gantt-title">CPU 调度甘特图</div>
             <div className="gantt-legend">{[...new Set(ganttData.map(d=>d.pid))].map(pid=>{const d=ganttData.find(x=>x.pid===pid);return<div key={pid} className="gantt-legend-item"><div className="gantt-legend-dot" style={{background:d.color}}></div>{d.name}</div>})}</div>
           </div>
           <div className="gantt-chart">
@@ -457,23 +455,21 @@ function SchedulerLab() {
               })()}
             </div>
           </div>
-        </div>
-        <div className="stats-section">
-          <div className="stats-title">调度统计</div>
-          <div className="stats-grid">
-            <div className="stat-box"><div className="stat-value">{stats.avgTurnaround||'-'}</div><div className="stat-label">平均周转</div></div>
-            <div className="stat-box"><div className="stat-value">{stats.avgWaiting||'-'}</div><div className="stat-label">平均等待</div></div>
-            <div className="stat-box"><div className="stat-value">{stats.completed||0}</div><div className="stat-label">已完成</div></div>
-            <div className="stat-box"><div className="stat-value">{stats.cpuUsage||0}%</div><div className="stat-label">CPU</div></div>
           </div>
-          {/* MFQ队列状态 */}
-          {currentAlgo === 'MFQ' && (
-            <MFQPanel
-              mfqQueues={mfqQueues}
-              processes={processes}
-              runningProcess={runningProcess}
-            />
-          )}
+
+          {/* 调度统计 */}
+          <div style={{padding:'12px 16px',borderTop:'1px solid var(--border)'}}>
+            <div className="stats-title">调度统计</div>
+            <div className="stats-grid">
+              <div className="stat-box"><div className="stat-value">{stats.avgTurnaround||'-'}</div><div className="stat-label">平均周转</div></div>
+              <div className="stat-box"><div className="stat-value">{stats.avgWaiting||'-'}</div><div className="stat-label">平均等待</div></div>
+              <div className="stat-box"><div className="stat-value">{stats.completed||0}</div><div className="stat-label">已完成</div></div>
+              <div className="stat-box"><div className="stat-value">{stats.cpuUsage||0}%</div><div className="stat-label">CPU</div></div>
+            </div>
+            {currentAlgo === 'MFQ' && (
+              <MFQPanel mfqQueues={mfqQueues} processes={processes} runningProcess={runningProcess} />
+            )}
+          </div>
         </div>
       </div>
     </div>
