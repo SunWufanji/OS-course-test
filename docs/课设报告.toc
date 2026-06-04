@@ -1,0 +1,20 @@
+\contentsline {section}{\numberline {1}项目概述}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}项目背景}{2}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}项目目标}{2}{subsection.1.2}%
+\contentsline {section}{\numberline {2}技术架构}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}技术栈}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}系统架构图}{2}{subsection.2.2}%
+\contentsline {section}{\numberline {3}核心功能实现}{3}{section.3}%
+\contentsline {subsection}{\numberline {3.1}macOS 桌面系统}{3}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}进程调度算法}{3}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}硬件资源模拟}{4}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}进程同步互斥}{4}{subsection.3.4}%
+\contentsline {section}{\numberline {4}数据库设计}{4}{section.4}%
+\contentsline {section}{\numberline {5}界面设计}{5}{section.5}%
+\contentsline {subsection}{\numberline {5.1}桌面系统}{5}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}任务管理器}{5}{subsection.5.2}%
+\contentsline {section}{\numberline {6}测试与验证}{5}{section.6}%
+\contentsline {subsection}{\numberline {6.1}功能测试}{5}{subsection.6.1}%
+\contentsline {section}{\numberline {7}总结与展望}{6}{section.7}%
+\contentsline {subsection}{\numberline {7.1}项目总结}{6}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}未来展望}{6}{subsection.7.2}%

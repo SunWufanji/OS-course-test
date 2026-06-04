@@ -82,21 +82,7 @@ function SchedulerLab() {
   const [mfqQueues, setMfqQueues] = useState([0, 0, 0, 0])
   const fetchProcessTree = async () => { try { const r = await axios.get(`${API_BASE}/processes/tree`); setProcessTree(r.data || []) } catch(e) { console.error(e) } }
 
-  // 同步演示功能
-  const [syncLog, setSyncLog] = useState([])
-  const [syncStatus, setSyncStatus] = useState({})
-  const fetchSyncStatus = async () => {
-    try {
-      const r = await axios.get(`${API_BASE}/sync/status`)
-      setSyncStatus(r.data)
-      setSyncLog(r.data.log || [])
-    } catch(e) { console.error(e) }
-  }
-  const startProducerConsumer = async () => { try { await axios.post(`${API_BASE}/sync/producer-consumer`); fetchSyncStatus() } catch(e) { console.error(e) } }
-  const startDiningPhilosophers = async () => { try { await axios.post(`${API_BASE}/sync/dining-philosophers`); fetchSyncStatus() } catch(e) { console.error(e) } }
-  const startReaderWriter = async () => { try { await axios.post(`${API_BASE}/sync/reader-writer`); fetchSyncStatus() } catch(e) { console.error(e) } }
-  const stopSyncDemo = async () => { try { await axios.post(`${API_BASE}/sync/stop`); fetchSyncStatus() } catch(e) { console.error(e) } }
-  const resetSyncDemo = async () => { try { await axios.post(`${API_BASE}/sync/reset`); fetchSyncStatus(); setSyncLog([]) } catch(e) { console.error(e) } }
+  // 进程 fork
   const forkProcess = async (pid) => {
     try {
       const childName = prompt('请输入子进程名称:', `P${pid}_child`)
@@ -220,10 +206,6 @@ function SchedulerLab() {
             )}
           </div>
           <div className="sidebar-section">
-            <div className="sidebar-label">同步演示</div>
-            <button className="control-btn ghost" onClick={()=>{fetchSyncStatus();setActivePanel('sync')}} style={{marginBottom:'6px'}}><span>🔒</span><span>同步互斥演示</span></button>
-          </div>
-          <div className="sidebar-section">
             <div className="sidebar-label">数据库</div>
             <button className="control-btn" onClick={saveResults} style={{marginBottom:'6px',background:'var(--green-soft)',color:'var(--green)',border:'1px solid rgba(34,197,94,0.3)'}}><span>💾</span><span>保存结果</span></button>
             <button className="control-btn ghost" onClick={()=>{setActivePanel('history');fetchHistory()}} style={{marginBottom:'6px'}}><span>📜</span><span>历史记录</span></button>
@@ -269,70 +251,6 @@ function SchedulerLab() {
                 <table className="process-table"><thead><tr><th>时间</th><th>算法</th><th>平均周转</th><th>平均等待</th><th>吞吐量</th><th>CPU</th><th>总时间</th><th>完成数</th><th>操作</th></tr></thead>
                 <tbody>{historyRecords.map((r,i)=>(<tr key={i||r.createdAt}><td>{new Date(r.createdAt).toLocaleString()}</td><td><span className="state-tag ready">{r.algorithm}</span></td><td>{r.avgTurnaround}</td><td>{r.avgWaiting}</td><td>{r.throughput}</td><td>{r.cpuUtilization}%</td><td>{r.totalTime}</td><td>{r.completedCount}</td><td style={{display:'flex',gap:'4px'}}><button onClick={()=>replayHistory(r.id)} style={{padding:'4px 8px',background:'var(--green-soft)',color:'var(--green)',border:'none',borderRadius:'4px',cursor:'pointer',fontSize:'11px'}}>重新创建</button><button onClick={()=>deleteHistoryRecord(r.id)} style={{padding:'4px 8px',background:'var(--red-soft)',color:'var(--red)',border:'none',borderRadius:'4px',cursor:'pointer',fontSize:'11px'}}>删除</button></td></tr>))}</tbody></table>
               )}
-            </div>
-          )}
-
-          {activePanel==='sync' && (
-            <div style={{flex:1,padding:'20px',overflow:'auto'}}>
-              <h3 style={{fontSize:'16px',fontWeight:600,marginBottom:'16px',color:'var(--text-0)'}}>🔒 进程同步互斥演示</h3>
-
-              {/* 演示选择 */}
-              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'12px',marginBottom:'20px'}}>
-                <div onClick={startProducerConsumer} style={{background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:'12px',padding:'16px',cursor:'pointer',textAlign:'center'}}>
-                  <div style={{fontSize:'24px',marginBottom:'8px'}}>🏭</div>
-                  <div style={{fontWeight:600,color:'var(--text-0)',marginBottom:'4px'}}>生产者消费者</div>
-                  <div style={{fontSize:'11px',color:'var(--text-3)'}}>信号量+互斥锁</div>
-                </div>
-                <div onClick={startDiningPhilosophers} style={{background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:'12px',padding:'16px',cursor:'pointer',textAlign:'center'}}>
-                  <div style={{fontSize:'24px',marginBottom:'8px'}}>🍽️</div>
-                  <div style={{fontWeight:600,color:'var(--text-0)',marginBottom:'4px'}}>哲学家就餐</div>
-                  <div style={{fontSize:'11px',color:'var(--text-3)'}}>死锁避免</div>
-                </div>
-                <div onClick={startReaderWriter} style={{background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:'12px',padding:'16px',cursor:'pointer',textAlign:'center'}}>
-                  <div style={{fontSize:'24px',marginBottom:'8px'}}>📖</div>
-                  <div style={{fontWeight:600,color:'var(--text-0)',marginBottom:'4px'}}>读者写者</div>
-                  <div style={{fontSize:'11px',color:'var(--text-3)'}}>读写锁</div>
-                </div>
-              </div>
-
-              {/* 控制按钮 */}
-              <div style={{display:'flex',gap:'8px',marginBottom:'16px'}}>
-                <button className="control-btn" onClick={stopSyncDemo} style={{background:'var(--amber-soft)',color:'var(--amber)',border:'1px solid rgba(245,158,11,0.3)'}}>⏹ 停止</button>
-                <button className="control-btn" onClick={resetSyncDemo}>↺ 重置</button>
-                <button className="control-btn ghost" onClick={fetchSyncStatus}>🔄 刷新状态</button>
-              </div>
-
-              {/* 状态信息 */}
-              <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px',marginBottom:'16px'}}>
-                <div style={{background:'var(--bg-2)',borderRadius:'8px',padding:'12px',textAlign:'center'}}>
-                  <div style={{fontSize:'18px',fontWeight:700,color:'var(--text-0)'}}>{syncStatus.buffer || 0}</div>
-                  <div style={{fontSize:'11px',color:'var(--text-3)'}}>缓冲区</div>
-                </div>
-                <div style={{background:'var(--bg-2)',borderRadius:'8px',padding:'12px',textAlign:'center'}}>
-                  <div style={{fontSize:'18px',fontWeight:700,color:'var(--green)'}}>{syncStatus.producerCount || 0}</div>
-                  <div style={{fontSize:'11px',color:'var(--text-3)'}}>已生产</div>
-                </div>
-                <div style={{background:'var(--bg-2)',borderRadius:'8px',padding:'12px',textAlign:'center'}}>
-                  <div style={{fontSize:'18px',fontWeight:700,color:'var(--blue)'}}>{syncStatus.consumerCount || 0}</div>
-                  <div style={{fontSize:'11px',color:'var(--text-3)'}}>已消费</div>
-                </div>
-                <div style={{background:'var(--bg-2)',borderRadius:'8px',padding:'12px',textAlign:'center'}}>
-                  <div style={{fontSize:'18px',fontWeight:700,color:'var(--text-0)'}}>{syncStatus.semaphoreValue || 0}</div>
-                  <div style={{fontSize:'11px',color:'var(--text-3)'}}>信号量</div>
-                </div>
-              </div>
-
-              {/* 日志 */}
-              <div style={{background:'var(--bg-2)',border:'1px solid var(--border)',borderRadius:'8px',padding:'12px',maxHeight:'300px',overflow:'auto',fontFamily:'monospace',fontSize:'12px'}}>
-                <div style={{color:'var(--text-3)',marginBottom:'8px',fontSize:'11px',textTransform:'uppercase',letterSpacing:'0.5px'}}>运行日志</div>
-                {syncLog.length === 0 ? (
-                  <div style={{color:'var(--text-3)',textAlign:'center',padding:'20px'}}>点击上方演示开始</div>
-                ) : (
-                  syncLog.slice().reverse().map((log, i) => (
-                    <div key={i} style={{padding:'4px 0',color:'var(--text-2)',borderBottom:'1px solid var(--border)'}}>{log}</div>
-                  ))
-                )}
-              </div>
             </div>
           )}
 

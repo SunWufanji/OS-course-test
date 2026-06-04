@@ -1,5 +1,6 @@
 com\processos\service\SyncDemoService.class
 com\processos\scheduler\SRTNScheduler.class
+com\processos\controller\SystemLogController.class
 com\processos\repository\ScenarioConfigRepository.class
 com\processos\ProcessOsApplication.class
 com\processos\service\ProcessService.class
@@ -9,6 +10,7 @@ com\processos\controller\ProcessController.class
 com\processos\model\ExecutionLog.class
 com\processos\scheduler\PreemptivePriorityScheduler.class
 com\processos\scheduler\SJFScheduler.class
+com\processos\controller\SyncLabController.class
 com\processos\model\ProcessControlBlock.class
 com\processos\model\ScenarioConfig$LoadType.class
 com\processos\scheduler\FCFSScheduler.class
@@ -20,9 +22,12 @@ com\processos\model\SimulatedApp.class
 com\processos\hardware\HardwarePool$MemoryAllocation.class
 com\processos\sync\Mutex.class
 com\processos\controller\LabController.class
+com\processos\repository\SystemEventRepository.class
 com\processos\sync\MessageQueue.class
+com\processos\service\SystemEventService.class
 com\processos\scheduler\RoundRobinScheduler.class
 com\processos\controller\SystemController.class
+com\processos\model\SystemEvent.class
 com\processos\repository\ExecutionLogRepository.class
 com\processos\hardware\HardwarePool$SystemStatus.class
 com\processos\hardware\MemoryBlock.class

@@ -6,6 +6,7 @@ import Window from './components/Desktop/Window'
 import TaskManager from './components/TaskManager/TaskManager'
 import SchedulerLab from './components/SchedulerLab/SchedulerLab'
 import SystemLogViewer from './components/SystemLog/SystemLogViewer'
+import SyncLab from './components/SyncLab/SyncLab'
 import ControlCenter from './components/Desktop/ControlCenter'
 import AppLauncher from './components/Desktop/AppLauncher'
 
@@ -67,6 +68,7 @@ function App() {
       '内核算法实验室': { title: '内核算法实验室 v2.0', icon: '🧪', component: 'SchedulerLab', width: '100%', height: '100%' },
       '任务管理器': { title: '任务管理器', icon: '⚙️', component: 'TaskManager', width: 860, height: 560 },
       '系统日志': { title: '系统事件查看器', icon: '📋', component: 'SystemLog', width: 900, height: 520 },
+      '同步互斥实验室': { title: '同步互斥实验室', icon: '🔒', component: 'SyncLab', width: 860, height: 560 },
     }
     if (configs[appName]) return configs[appName]
     const app = availableApps.find(a => a.name === appName)
@@ -122,6 +124,7 @@ function App() {
           onClose={() => closeWindow(win.id)} onMinimize={() => minimizeWindow(win.id)}
           onMaximize={() => maximizeWindow(win.id)} onActivate={() => activateWindow(win.id)}>
           {win.component === 'SchedulerLab' && <SchedulerLab />}
+          {win.component === 'SyncLab' && <SyncLab />}
           {win.component === 'TaskManager' && (
             <TaskManager processes={sandboxProcesses} systemStatus={systemStatus}
               onTerminate={terminateProcess} onSuspend={suspendProcess} onResume={resumeProcess} />
@@ -158,7 +161,8 @@ function App() {
         onOpenTaskManager={() => openWindow('任务管理器')} />
       <AppLauncher isOpen={launcherOpen} onClose={() => setLauncherOpen(false)}
         onLaunchApp={launchApp} onOpenTaskManager={() => openWindow('任务管理器')}
-        onOpenKernelLab={() => openWindow('内核算法实验室')} onOpenSystemLog={() => openWindow('系统日志')} />
+        onOpenKernelLab={() => openWindow('内核算法实验室')} onOpenSystemLog={() => openWindow('系统日志')}
+        onOpenSyncLab={() => openWindow('同步互斥实验室')} />
     </div>
   )
 }
