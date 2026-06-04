@@ -83,8 +83,18 @@ public class ProcessManager {
             }
         }
 
+        // 非单实例应用加编号（Word(1)、Word(2)）
+        String displayName = app.getName();
+        if (!app.isSingleInstance()) {
+            long count = processTable.stream()
+                .filter(p -> p.getAppType() != null && p.getAppType().equals(app.name())
+                    && p.getState() != ProcessState.TERMINATED)
+                .count();
+            displayName = app.getName() + "(" + (count + 1) + ")";
+        }
+
         // 创建主进程
-        ProcessControlBlock mainProcess = createProcessInternal(app, 0, null);
+        ProcessControlBlock mainProcess = createProcessInternal(app, 0, null, displayName);
         if (mainProcess == null) {
             eventService.error("MEMORY_MGR",
                 "启动失败：" + app.getName() + "，系统内存不足 (需要 " + app.getMemoryRequired() + "MB)");
@@ -154,12 +164,16 @@ public class ProcessManager {
      * 内部创建进程
      */
     private ProcessControlBlock createProcessInternal(SimulatedApp app, int parentPid, String color) {
+        return createProcessInternal(app, parentPid, color, app.getName());
+    }
+
+    private ProcessControlBlock createProcessInternal(SimulatedApp app, int parentPid, String color, String displayName) {
         int pid = nextPid++;
         if (color == null) {
             color = COLORS[(pid - 100) % COLORS.length];
         }
 
-        boolean memOk = hardwarePool.allocateMemory(app.getMemoryRequired(), pid, app.getName());
+        boolean memOk = hardwarePool.allocateMemory(app.getMemoryRequired(), pid, displayName);
         if (!memOk) return null;
 
         int coreIndex = hardwarePool.allocateCpuCore(pid);

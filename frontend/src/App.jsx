@@ -174,7 +174,7 @@ function App() {
 function AppProcessView({ appName, pid, process, onTerminate }) {
   const [printStatus, setPrintStatus] = useState(null)
 
-  const canPrint = ['Word', 'Excel', '记事本', 'PDF'].some(n => appName.includes(n))
+  const canPrint = ['Word', 'Excel', '记事本', 'PDF'].some(n => appName.includes(n) || appName.startsWith(n))
 
   const doPrint = async () => {
     try {
