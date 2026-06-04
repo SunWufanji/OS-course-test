@@ -7,6 +7,7 @@ import TaskManager from './components/TaskManager/TaskManager'
 import SchedulerLab from './components/SchedulerLab/SchedulerLab'
 import SystemLogViewer from './components/SystemLog/SystemLogViewer'
 import SyncLab from './components/SyncLab/SyncLab'
+import IoDeviceManager from './components/Desktop/IODeviceManager'
 import ControlCenter from './components/Desktop/ControlCenter'
 import AppLauncher from './components/Desktop/AppLauncher'
 
@@ -69,6 +70,7 @@ function App() {
       '任务管理器': { title: '任务管理器', icon: '⚙️', component: 'TaskManager', width: 860, height: 560 },
       '系统日志': { title: '系统事件查看器', icon: '📋', component: 'SystemLog', width: 900, height: 520 },
       '同步互斥实验室': { title: '同步互斥实验室', icon: '🔒', component: 'SyncLab', width: 860, height: 560 },
+      'I/O设备管理': { title: 'I/O 设备管理器', icon: '🔧', component: 'IoDeviceManager', width: 700, height: 500 },
     }
     if (configs[appName]) return configs[appName]
     const app = availableApps.find(a => a.name === appName)
@@ -125,6 +127,7 @@ function App() {
           onMaximize={() => maximizeWindow(win.id)} onActivate={() => activateWindow(win.id)}>
           {win.component === 'SchedulerLab' && <SchedulerLab />}
           {win.component === 'SyncLab' && <SyncLab />}
+          {win.component === 'IoDeviceManager' && <IoDeviceManager />}
           {win.component === 'TaskManager' && (
             <TaskManager processes={sandboxProcesses} systemStatus={systemStatus}
               onTerminate={terminateProcess} onSuspend={suspendProcess} onResume={resumeProcess} />
@@ -162,7 +165,8 @@ function App() {
       <AppLauncher isOpen={launcherOpen} onClose={() => setLauncherOpen(false)}
         onLaunchApp={launchApp} onOpenTaskManager={() => openWindow('任务管理器')}
         onOpenKernelLab={() => openWindow('内核算法实验室')} onOpenSystemLog={() => openWindow('系统日志')}
-        onOpenSyncLab={() => openWindow('同步互斥实验室')} />
+        onOpenSyncLab={() => openWindow('同步互斥实验室')}
+        onOpenIoDevice={() => openWindow('I/O设备管理')} />
     </div>
   )
 }

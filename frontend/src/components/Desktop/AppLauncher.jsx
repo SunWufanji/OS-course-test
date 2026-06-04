@@ -7,6 +7,7 @@ const ALL_APPS = [
   { name: '系统日志', icon: '📋', action: 'systemLog', category: '系统工具' },
   { name: '内核算法实验室', icon: '🧪', action: 'kernelLab', category: '系统工具' },
   { name: '同步互斥实验室', icon: '🔒', action: 'syncLab', category: '系统工具' },
+  { name: 'I/O设备管理', icon: '🔧', action: 'ioDevice', category: '系统工具' },
   // 游戏
   { name: 'CS:GO', icon: '/picture/CS2.jpg', app: 'CS:GO', category: '游戏', isImage: true },
   { name: '绝地求生', icon: '🎯', app: '绝地求生', category: '游戏' },
@@ -29,7 +30,7 @@ const ALL_APPS = [
   { name: '视频播放器', icon: '🎬', app: '视频播放器', category: '娱乐' },
 ]
 
-function AppLauncher({ isOpen, onClose, onLaunchApp, onOpenTaskManager, onOpenKernelLab, onOpenSystemLog, onOpenSyncLab }) {
+function AppLauncher({ isOpen, onClose, onLaunchApp, onOpenTaskManager, onOpenKernelLab, onOpenSystemLog, onOpenSyncLab, onOpenIoDevice }) {
   const [search, setSearch] = useState('')
 
   if (!isOpen) return null
@@ -44,6 +45,7 @@ function AppLauncher({ isOpen, onClose, onLaunchApp, onOpenTaskManager, onOpenKe
     else if (app.action === 'systemLog') onOpenSystemLog()
     else if (app.action === 'kernelLab') onOpenKernelLab()
     else if (app.action === 'syncLab') onOpenSyncLab()
+    else if (app.action === 'ioDevice') onOpenIoDevice()
     else if (app.app) onLaunchApp(app.app)
     onClose()
   }
