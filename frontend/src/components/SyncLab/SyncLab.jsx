@@ -3,10 +3,11 @@ import axios from 'axios'
 
 const API = '/api/sync-lab'
 
-// ===== 生产者消费者组件 =====
+// ===== 生产者消费者组件（多线程版） =====
 function ProducerConsumer() {
-  const [status, setStatus] = useState({ buffer: [], empty: 8, full: 0, producerState: 'IDLE', consumerState: 'IDLE', producerCount: 0, consumerCount: 0, log: [] })
-  const [autoRun, setAutoRun] = useState(false)
+  const [status, setStatus] = useState({ buffer: [], empty: 8, full: 0, mutex: 1, producerCount: 0, consumerCount: 0, producerStates: {}, consumerStates: {}, isRunning: false, log: [] })
+  const [numProducers, setNumProducers] = useState(2)
+  const [numConsumers, setNumConsumers] = useState(2)
   const timerRef = React.useRef(null)
 
   const fetchStatus = useCallback(async () => {
@@ -15,29 +16,47 @@ function ProducerConsumer() {
 
   useEffect(() => { axios.post(`${API}/pc/init`); fetchStatus() }, [fetchStatus])
 
+  // 定时刷新状态
   useEffect(() => {
-    if (autoRun) {
-      timerRef.current = setInterval(async () => {
-        await axios.post(`${API}/pc/produce`)
-        setTimeout(() => axios.post(`${API}/pc/consume`), 200)
-        fetchStatus()
-      }, 600)
-    } else { clearInterval(timerRef.current) }
+    timerRef.current = setInterval(fetchStatus, 800)
     return () => clearInterval(timerRef.current)
-  }, [autoRun, fetchStatus])
+  }, [fetchStatus])
 
-  const produce = async () => { await axios.post(`${API}/pc/produce`); fetchStatus() }
-  const consume = async () => { await axios.post(`${API}/pc/consume`); fetchStatus() }
-  const wakeProducer = async () => { await axios.post(`${API}/pc/wake-producer`); fetchStatus() }
-  const wakeConsumer = async () => { await axios.post(`${API}/pc/wake-consumer`); fetchStatus() }
-  const reset = async () => { setAutoRun(false); await axios.post(`${API}/pc/init`); fetchStatus() }
+  const start = async () => {
+    await axios.post(`${API}/pc/start`, { producers: numProducers, consumers: numConsumers })
+    fetchStatus()
+  }
+  const stop = async () => { await axios.post(`${API}/pc/stop`); fetchStatus() }
+  const reset = async () => { await axios.post(`${API}/pc/stop`); await axios.post(`${API}/pc/init`); fetchStatus() }
+
+  const stateColor = (s) => {
+    if (!s) return '#555'
+    if (s.includes('BLOCKED')) return '#ef4444'
+    if (s.includes('PRODUC') || s.includes('CONSUM')) return '#22c55e'
+    if (s.includes('WAITING')) return '#f59e0b'
+    return '#555'
+  }
+  const stateLabel = (s) => {
+    if (!s) return '空闲'
+    if (s === 'IDLE') return '空闲'
+    if (s.includes('BLOCKED')) return '阻塞'
+    if (s.includes('PRODUC')) return '生产中'
+    if (s.includes('CONSUM')) return '消费中'
+    if (s.includes('WAITING')) return '等待'
+    return s
+  }
+
+  const producerStates = status.producerStates || {}
+  const consumerStates = status.consumerStates || {}
+  const producerIds = Object.keys(producerStates).map(Number).sort()
+  const consumerIds = Object.keys(consumerStates).map(Number).sort()
 
   return (
     <div style={{ padding: '16px' }}>
       {/* 信号量监视器 */}
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', justifyContent: 'center' }}>
         {[
-          { label: 'mutex', value: 1, color: '#f59e0b' },
+          { label: 'mutex', value: status.mutex, color: '#f59e0b' },
           { label: 'empty', value: status.empty, color: '#22c55e' },
           { label: 'full', value: status.full, color: '#ef4444' },
         ].map(s => (
@@ -46,88 +65,108 @@ function ProducerConsumer() {
             <div style={{ fontSize: '24px', fontWeight: 700, color: s.color, textShadow: `0 0 8px ${s.color}40` }}>{s.value}</div>
           </div>
         ))}
+        <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '10px 16px', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ fontSize: '9px', color: '#888', letterSpacing: '1px' }}>守恒</div>
+          <div style={{ fontSize: '20px', fontWeight: 700, color: status.empty + status.full === 8 ? '#22c55e' : '#ef4444' }}>{status.empty}+{status.full}={status.empty + status.full}</div>
+        </div>
       </div>
 
-      {/* 主视图：生产者 → 缓冲区 → 消费者 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', justifyContent: 'center' }}>
-        {/* 生产者 */}
-        <div style={{ textAlign: 'center', minWidth: '100px' }}>
-          <div style={{
-            fontSize: '36px', marginBottom: '4px',
-            filter: status.producerState === 'BLOCKED' ? 'grayscale(1) brightness(0.5)' : 'none',
-            transition: 'all 0.3s'
-          }}>🏭</div>
-          <div style={{ fontSize: '11px', color: '#888' }}>生产者</div>
-          <div style={{
-            fontSize: '10px', padding: '2px 8px', borderRadius: '4px', marginTop: '4px',
-            background: status.producerState === 'BLOCKED' ? 'rgba(239,68,68,0.2)' : status.producerState === 'RUNNING' ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.05)',
-            color: status.producerState === 'BLOCKED' ? '#ef4444' : status.producerState === 'RUNNING' ? '#22c55e' : '#888'
-          }}>
-            {status.producerState === 'BLOCKED' ? '🔴 阻塞' : status.producerState === 'RUNNING' ? '🟢 运行' : '⚪ 空闲'}
+      {/* 多线程生产者/消费者可视化 */}
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', justifyContent: 'center' }}>
+        {/* 生产者区域 */}
+        <div style={{ textAlign: 'center', minWidth: '120px' }}>
+          <div style={{ fontSize: '11px', color: '#888', marginBottom: '8px', letterSpacing: '1px' }}>🏭 PRODUCERS</div>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {producerIds.map(id => {
+              const s = producerStates[id]
+              const blocked = s && s.includes('BLOCKED')
+              return (
+                <div key={id} style={{ textAlign: 'center', minWidth: '50px' }}>
+                  <div style={{ fontSize: '24px', filter: blocked ? 'grayscale(1) brightness(0.5)' : 'none', transition: '0.3s' }}>🏭</div>
+                  <div style={{ fontSize: '9px', color: stateColor(s) }}>{stateLabel(s)}</div>
+                  <div style={{ fontSize: '8px', color: '#555' }}>P{id}</div>
+                </div>
+              )
+            })}
           </div>
           <div style={{ fontSize: '10px', color: '#555', marginTop: '4px' }}>已生产: {status.producerCount}</div>
         </div>
 
         {/* 箭头 */}
-        <div style={{ color: '#555', fontSize: '20px' }}>→</div>
+        <div style={{ color: '#555', fontSize: '20px', alignSelf: 'center' }}>→</div>
 
         {/* 缓冲区 */}
-        <div style={{ display: 'flex', gap: '4px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-          {(status.buffer || []).map((filled, i) => (
-            <div key={i} style={{
-              width: '28px', height: '28px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: filled ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${filled ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.06)'}`,
-              transition: 'all 0.3s', fontSize: '12px'
-            }}>
-              {filled ? '📦' : ''}
-            </div>
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ fontSize: '9px', color: '#888', marginBottom: '4px', letterSpacing: '1px' }}>BUFFER [N=8]</div>
+          <div style={{ display: 'flex', gap: '3px', padding: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+            {(status.buffer || []).map((filled, i) => (
+              <div key={i} style={{
+                width: '26px', height: '26px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: filled ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${filled ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.06)'}`,
+                transition: 'all 0.3s', fontSize: '11px'
+              }}>{filled ? '📦' : ''}</div>
+            ))}
+          </div>
+          <div style={{ fontSize: '9px', color: '#555', marginTop: '4px' }}>empty={status.empty} full={status.full}</div>
         </div>
 
         {/* 箭头 */}
-        <div style={{ color: '#555', fontSize: '20px' }}>→</div>
+        <div style={{ color: '#555', fontSize: '20px', alignSelf: 'center' }}>→</div>
 
-        {/* 消费者 */}
-        <div style={{ textAlign: 'center', minWidth: '100px' }}>
-          <div style={{
-            fontSize: '36px', marginBottom: '4px',
-            filter: status.consumerState === 'BLOCKED' ? 'grayscale(1) brightness(0.5)' : 'none',
-            transition: 'all 0.3s'
-          }}>🛒</div>
-          <div style={{ fontSize: '11px', color: '#888' }}>消费者</div>
-          <div style={{
-            fontSize: '10px', padding: '2px 8px', borderRadius: '4px', marginTop: '4px',
-            background: status.consumerState === 'BLOCKED' ? 'rgba(239,68,68,0.2)' : status.consumerState === 'RUNNING' ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.05)',
-            color: status.consumerState === 'BLOCKED' ? '#ef4444' : status.consumerState === 'RUNNING' ? '#22c55e' : '#888'
-          }}>
-            {status.consumerState === 'BLOCKED' ? '🔴 阻塞' : status.consumerState === 'RUNNING' ? '🟢 运行' : '⚪ 空闲'}
+        {/* 消费者区域 */}
+        <div style={{ textAlign: 'center', minWidth: '120px' }}>
+          <div style={{ fontSize: '11px', color: '#888', marginBottom: '8px', letterSpacing: '1px' }}>🛒 CONSUMERS</div>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {consumerIds.map(id => {
+              const s = consumerStates[id]
+              const blocked = s && s.includes('BLOCKED')
+              return (
+                <div key={id} style={{ textAlign: 'center', minWidth: '50px' }}>
+                  <div style={{ fontSize: '24px', filter: blocked ? 'grayscale(1) brightness(0.5)' : 'none', transition: '0.3s' }}>🛒</div>
+                  <div style={{ fontSize: '9px', color: stateColor(s) }}>{stateLabel(s)}</div>
+                  <div style={{ fontSize: '8px', color: '#555' }}>C{id}</div>
+                </div>
+              )
+            })}
           </div>
           <div style={{ fontSize: '10px', color: '#555', marginTop: '4px' }}>已消费: {status.consumerCount}</div>
         </div>
       </div>
 
-      {/* 控制按钮 */}
-      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '12px', flexWrap: 'wrap' }}>
-        <button onClick={produce} style={{ padding: '6px 14px', background: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>📦 生产</button>
-        <button onClick={consume} style={{ padding: '6px 14px', background: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>🛒 消费</button>
-        <button onClick={() => setAutoRun(!autoRun)} style={{ padding: '6px 14px', background: autoRun ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)', color: autoRun ? '#f59e0b' : '#888', border: `1px solid ${autoRun ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>{autoRun ? '⏸ 暂停' : '▶ 自动'}</button>
+      {/* 控制面板 */}
+      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginRight: '8px' }}>
+          <span style={{ fontSize: '11px', color: '#888' }}>生产者:</span>
+          <input type="number" value={numProducers} onChange={e => setNumProducers(Math.max(1, Math.min(5, +e.target.value || 1)))} min={1} max={5}
+            style={{ width: '36px', padding: '4px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: '#e0f0ff', fontSize: '11px', textAlign: 'center' }} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginRight: '8px' }}>
+          <span style={{ fontSize: '11px', color: '#888' }}>消费者:</span>
+          <input type="number" value={numConsumers} onChange={e => setNumConsumers(Math.max(1, Math.min(5, +e.target.value || 1)))} min={1} max={5}
+            style={{ width: '36px', padding: '4px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: '#e0f0ff', fontSize: '11px', textAlign: 'center' }} />
+        </div>
+        <button onClick={status.isRunning ? stop : start} style={{
+          padding: '6px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600,
+          background: status.isRunning ? 'rgba(239,68,68,0.15)' : 'rgba(34,197,94,0.15)',
+          color: status.isRunning ? '#ef4444' : '#22c55e',
+          border: `1px solid ${status.isRunning ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)'}`
+        }}>{status.isRunning ? '⏹ 停止' : '▶ 启动多线程'}</button>
         <button onClick={reset} style={{ padding: '6px 14px', background: 'rgba(255,255,255,0.05)', color: '#888', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>↺ 重置</button>
       </div>
 
-      {/* 唤醒按钮（阻塞时显示） */}
-      {(status.producerState === 'BLOCKED' || status.consumerState === 'BLOCKED') && (
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '12px' }}>
-          {status.producerState === 'BLOCKED' && <button onClick={wakeProducer} style={{ padding: '6px 14px', background: 'rgba(245,158,11,0.2)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>🔔 唤醒生产者 (V-empty)</button>}
-          {status.consumerState === 'BLOCKED' && <button onClick={wakeConsumer} style={{ padding: '6px 14px', background: 'rgba(245,158,11,0.2)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>🔔 唤醒消费者 (V-full)</button>}
-        </div>
-      )}
+      {/* 守恒验证 */}
+      <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+        <span style={{ fontSize: '11px', color: status.empty + status.full === 8 ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
+          {status.empty + status.full === 8 ? '✅ empty + full = 8 守恒成立' : '❌ 守恒被破坏！empty + full = ' + (status.empty + status.full)}
+        </span>
+      </div>
 
       {/* 运行日志 */}
-      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '6px', padding: '10px', maxHeight: '150px', overflow: 'auto', fontFamily: 'monospace', fontSize: '11px' }}>
-        <div style={{ color: '#555', marginBottom: '6px', fontSize: '10px', letterSpacing: '1px' }}>运行日志</div>
-        {(status.log || []).slice(-15).reverse().map((log, i) => (
-          <div key={i} style={{ padding: '2px 0', color: '#666', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>{log}</div>
+      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '6px', padding: '10px', maxHeight: '180px', overflow: 'auto', fontFamily: 'monospace', fontSize: '10px' }}>
+        <div style={{ color: '#555', marginBottom: '6px', fontSize: '9px', letterSpacing: '1px' }}>PV 操作日志</div>
+        {(status.log || []).slice(-20).reverse().map((log, i) => (
+          <div key={i} style={{ padding: '2px 0', color: log.includes('阻塞') ? '#ef4444' : log.includes('放入') ? '#22c55e' : log.includes('取出') ? '#3b82f6' : '#666', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>{log}</div>
         ))}
       </div>
     </div>

@@ -3,231 +3,290 @@ package com.processos.service;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 同步互斥演示服务 — 生产者消费者 / 读者写者 / 哲学家进餐
+ * 同步互斥演示服务 — 多线程版本
+ * 严格遵循 PV 操作语义
  */
 @Service
 public class SyncDemoService {
 
     private final List<String> syncLog = new CopyOnWriteArrayList<>();
-    private boolean isRunning = false;
 
-    // ==================== 生产者消费者 ====================
+    // ==================== 生产者消费者（多线程） ====================
     private int pcBufferSize = 8;
-    private boolean[] pcBuffer;       // 缓冲区槽位
-    private int pcEmpty;              // 空槽位数
-    private int pcFull;               // 满槽位数
-    private int pcProducerCount = 0;
-    private int pcConsumerCount = 0;
-    private String pcProducerState = "IDLE";  // IDLE / RUNNING / BLOCKED
-    private String pcConsumerState = "IDLE";
+    private boolean[] pcBuffer;
+    private final AtomicInteger pcEmpty = new AtomicInteger(8);  // 空槽位数
+    private final AtomicInteger pcFull = new AtomicInteger(0);    // 满槽位数
+    private final AtomicInteger pcMutex = new AtomicInteger(1);   // 互斥锁
+    private final AtomicInteger pcProducerCount = new AtomicInteger(0);
+    private final AtomicInteger pcConsumerCount = new AtomicInteger(0);
+    private final Map<Integer, String> pcProducerStates = new ConcurrentHashMap<>();
+    private final Map<Integer, String> pcConsumerStates = new ConcurrentHashMap<>();
+    private final AtomicBoolean pcRunning = new AtomicBoolean(false);
+    private final List<Thread> pcThreads = new CopyOnWriteArrayList<>();
 
     // ==================== 读者写者 ====================
-    private int rwReadCount = 0;       // 当前读者数
-    private boolean rwWriting = false; // 是否有写者在写
-    private List<String> rwReaderStates = new ArrayList<>(Arrays.asList("IDLE", "IDLE", "IDLE"));
-    private List<String> rwWriterStates = new ArrayList<>(Arrays.asList("IDLE", "IDLE"));
+    private final AtomicInteger rwReadCount = new AtomicInteger(0);
+    private final AtomicInteger rwWrt = new AtomicInteger(1);  // 读写互斥锁
+    private final AtomicBoolean rwWriting = new AtomicBoolean(false);
+    private final String[] rwReaderStates = {"IDLE", "IDLE", "IDLE"};
+    private final String[] rwWriterStates = {"IDLE", "IDLE"};
 
     // ==================== 哲学家进餐 ====================
     private String[] philosopherStates = {"THINKING", "THINKING", "THINKING", "THINKING", "THINKING"};
-    private boolean[] chopsticks = {false, false, false, false, false}; // true=被占用
+    private boolean[] chopsticks = {false, false, false, false, false};
     private boolean hasDeadlock = false;
-    private String deadlockStrategy = "NONE"; // NONE / LIMIT_4 / ODD_EVEN / MUTEX
-    private String philosopherLog = "";
+    private String deadlockStrategy = "NONE";
 
-    public SyncDemoService() {}
+    // ==================== 生产者消费者（多线程版） ====================
 
-    // ==================== 生产者消费者 API ====================
-
+    /**
+     * 初始化生产者消费者（多线程版）
+     */
     public void initProducerConsumer() {
+        stopProducerConsumer(); // 先停止之前的线程
         pcBuffer = new boolean[pcBufferSize];
-        pcEmpty = pcBufferSize;
-        pcFull = 0;
-        pcProducerCount = 0;
-        pcConsumerCount = 0;
-        pcProducerState = "IDLE";
-        pcConsumerState = "IDLE";
+        pcEmpty.set(pcBufferSize);
+        pcFull.set(0);
+        pcMutex.set(1);
+        pcProducerCount.set(0);
+        pcConsumerCount.set(0);
+        pcProducerStates.clear();
+        pcConsumerStates.clear();
         syncLog.clear();
-        addLog("[初始化] 缓冲区大小=" + pcBufferSize + ", empty=" + pcEmpty + ", full=" + pcFull);
+        addLog("[初始化] 缓冲区大小=" + pcBufferSize + ", mutex=1, empty=" + pcBufferSize + ", full=0");
     }
 
     /**
-     * 单步执行：生产者生产一个产品
+     * 启动多线程生产者消费者
      */
-    public synchronized Map<String, Object> producerStep() {
-        Map<String, Object> result = new HashMap<>();
-        if (pcEmpty <= 0) {
-            pcProducerState = "BLOCKED";
-            addLog("[生产者] P(empty) 阻塞！缓冲区已满 (empty=0)");
-            result.put("event", "BLOCKED");
-            result.put("message", "缓冲区已满，生产者阻塞");
-        } else {
-            pcEmpty--;
-            pcFull++;
-            pcProducerCount++;
-            // 找到第一个空槽位填入
-            for (int i = 0; i < pcBuffer.length; i++) {
-                if (!pcBuffer[i]) {
-                    pcBuffer[i] = true;
-                    break;
+    public void startProducerConsumer(int numProducers, int numConsumers) {
+        stopProducerConsumer();
+        pcRunning.set(true);
+        syncLog.clear();
+        addLog("[启动] " + numProducers + "个生产者, " + numConsumers + "个消费者");
+
+        // 启动生产者线程
+        for (int i = 0; i < numProducers; i++) {
+            final int id = i;
+            pcProducerStates.put(id, "IDLE");
+            Thread t = new Thread(() -> producerLoop(id), "Producer-" + id);
+            t.setDaemon(true);
+            pcThreads.add(t);
+            t.start();
+        }
+
+        // 启动消费者线程
+        for (int i = 0; i < numConsumers; i++) {
+            final int id = i;
+            pcConsumerStates.put(id, "IDLE");
+            Thread t = new Thread(() -> consumerLoop(id), "Consumer-" + id);
+            t.setDaemon(true);
+            pcThreads.add(t);
+            t.start();
+        }
+    }
+
+    /**
+     * 生产者循环（严格 PV 操作）
+     */
+    private void producerLoop(int id) {
+        while (pcRunning.get()) {
+            try {
+                Thread.sleep(500 + new Random().nextInt(500)); // 模拟生产时间
+
+                // P(empty) — 等待空闲缓冲区
+                pcProducerStates.put(id, "WAITING_EMPTY");
+                while (pcEmpty.get() <= 0 && pcRunning.get()) {
+                    addLog("[生产者" + id + "] P(empty) 阻塞！empty=0");
+                    synchronized (pcEmpty) { pcEmpty.wait(100); }
                 }
-            }
-            pcProducerState = "RUNNING";
-            addLog("[生产者] P(empty): empty=" + pcEmpty + ", full=" + pcFull + ", 生产产品 #" + pcProducerCount);
-            result.put("event", "PRODUCED");
-            result.put("message", "生产产品 #" + pcProducerCount);
-        }
-        result.put("buffer", pcBuffer.clone());
-        result.put("empty", pcEmpty);
-        result.put("full", pcFull);
-        result.put("producerState", pcProducerState);
-        result.put("producerCount", pcProducerCount);
-        result.put("consumerCount", pcConsumerCount);
-        return result;
-    }
+                if (!pcRunning.get()) break;
+                pcEmpty.decrementAndGet();
 
-    /**
-     * 单步执行：消费者消费一个产品
-     */
-    public synchronized Map<String, Object> consumerStep() {
-        Map<String, Object> result = new HashMap<>();
-        if (pcFull <= 0) {
-            pcConsumerState = "BLOCKED";
-            addLog("[消费者] P(full) 阻塞！缓冲区为空 (full=0)");
-            result.put("event", "BLOCKED");
-            result.put("message", "缓冲区为空，消费者阻塞");
-        } else {
-            pcFull++;
-            pcEmpty++;
-            pcConsumerCount++;
-            // 找到第一个满槽位清空
-            for (int i = 0; i < pcBuffer.length; i++) {
-                if (pcBuffer[i]) {
-                    pcBuffer[i] = false;
-                    break;
+                // P(mutex) — 进入临界区
+                while (pcMutex.get() <= 0 && pcRunning.get()) {
+                    synchronized (pcMutex) { pcMutex.wait(100); }
                 }
+                pcMutex.decrementAndGet();
+
+                // === 临界区：放入缓冲区 ===
+                pcProducerStates.put(id, "PRODUCING");
+                for (int i = 0; i < pcBuffer.length; i++) {
+                    if (!pcBuffer[i]) {
+                        pcBuffer[i] = true;
+                        break;
+                    }
+                }
+                pcFull.incrementAndGet();
+                int count = pcProducerCount.incrementAndGet();
+                addLog("[生产者" + id + "] P(empty) P(mutex) → 放入产品 #" + count + " (empty=" + pcEmpty.get() + ", full=" + pcFull.get() + ")");
+
+                // V(mutex) — 离开临界区
+                pcMutex.incrementAndGet();
+                synchronized (pcMutex) { pcMutex.notify(); }
+
+                // V(full) — 通知消费者
+                pcFull.incrementAndGet();
+                synchronized (pcFull) { pcFull.notify(); }
+
+                pcProducerStates.put(id, "IDLE");
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
             }
-            pcConsumerState = "RUNNING";
-            addLog("[消费者] P(full): empty=" + pcEmpty + ", full=" + pcFull + ", 消费产品 #" + pcConsumerCount);
-            result.put("event", "CONSUMED");
-            result.put("message", "消费产品 #" + pcConsumerCount);
-        }
-        result.put("buffer", pcBuffer.clone());
-        result.put("empty", pcEmpty);
-        result.put("full", pcFull);
-        result.put("producerState", pcProducerState);
-        result.put("consumerState", pcConsumerState);
-        result.put("producerCount", pcProducerCount);
-        result.put("consumerCount", pcConsumerCount);
-        return result;
-    }
-
-    /**
-     * 唤醒阻塞的生产者
-     */
-    public synchronized void wakeProducer() {
-        if ("BLOCKED".equals(pcProducerState)) {
-            pcProducerState = "IDLE";
-            addLog("[系统] 生产者被唤醒 (V(empty))");
         }
     }
 
     /**
-     * 唤醒阻塞的消费者
+     * 消费者循环（严格 PV 操作）
      */
-    public synchronized void wakeConsumer() {
-        if ("BLOCKED".equals(pcConsumerState)) {
-            pcConsumerState = "IDLE";
-            addLog("[系统] 消费者被唤醒 (V(full))");
+    private void consumerLoop(int id) {
+        while (pcRunning.get()) {
+            try {
+                Thread.sleep(800 + new Random().nextInt(800)); // 模拟消费时间
+
+                // P(full) — 等待有产品
+                pcConsumerStates.put(id, "WAITING_FULL");
+                while (pcFull.get() <= 0 && pcRunning.get()) {
+                    synchronized (pcFull) { pcFull.wait(100); }
+                }
+                if (!pcRunning.get()) break;
+                pcFull.decrementAndGet();
+
+                // P(mutex) — 进入临界区
+                while (pcMutex.get() <= 0 && pcRunning.get()) {
+                    synchronized (pcMutex) { pcMutex.wait(100); }
+                }
+                pcMutex.decrementAndGet();
+
+                // === 临界区：从缓冲区取出 ===
+                pcConsumerStates.put(id, "CONSUMING");
+                for (int i = 0; i < pcBuffer.length; i++) {
+                    if (pcBuffer[i]) {
+                        pcBuffer[i] = false;
+                        break;
+                    }
+                }
+                pcEmpty.incrementAndGet();
+                int count = pcConsumerCount.incrementAndGet();
+                addLog("[消费者" + id + "] P(full) P(mutex) → 取出产品 #" + count + " (empty=" + pcEmpty.get() + ", full=" + pcFull.get() + ")");
+
+                // V(mutex) — 离开临界区
+                pcMutex.incrementAndGet();
+                synchronized (pcMutex) { pcMutex.notify(); }
+
+                // V(empty) — 通知生产者
+                pcEmpty.incrementAndGet();
+                synchronized (pcEmpty) { pcEmpty.notify(); }
+
+                pcConsumerStates.put(id, "IDLE");
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
         }
     }
 
+    /**
+     * 停止生产者消费者
+     */
+    public void stopProducerConsumer() {
+        pcRunning.set(false);
+        // 唤醒所有等待的线程
+        synchronized (pcEmpty) { pcEmpty.notifyAll(); }
+        synchronized (pcFull) { pcFull.notifyAll(); }
+        synchronized (pcMutex) { pcMutex.notifyAll(); }
+        for (Thread t : pcThreads) {
+            t.interrupt();
+            try { t.join(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        }
+        pcThreads.clear();
+    }
+
+    /**
+     * 获取生产者消费者状态
+     */
     public Map<String, Object> getProducerConsumerStatus() {
         Map<String, Object> status = new HashMap<>();
         status.put("buffer", pcBuffer != null ? pcBuffer.clone() : new boolean[pcBufferSize]);
         status.put("bufferSize", pcBufferSize);
-        status.put("empty", pcEmpty);
-        status.put("full", pcFull);
-        status.put("producerState", pcProducerState);
-        status.put("consumerState", pcConsumerState);
-        status.put("producerCount", pcProducerCount);
-        status.put("consumerCount", pcConsumerCount);
+        status.put("empty", pcEmpty.get());
+        status.put("full", pcFull.get());
+        status.put("mutex", pcMutex.get());
+        status.put("producerCount", pcProducerCount.get());
+        status.put("consumerCount", pcConsumerCount.get());
+        status.put("producerStates", new HashMap<>(pcProducerStates));
+        status.put("consumerStates", new HashMap<>(pcConsumerStates));
+        status.put("isRunning", pcRunning.get());
         status.put("log", new ArrayList<>(syncLog));
-        status.put("isRunning", isRunning);
         return status;
     }
 
-    // ==================== 读者写者 API ====================
+    // ==================== 读者写者 ====================
 
     public void initReaderWriter() {
-        rwReadCount = 0;
-        rwWriting = false;
-        rwReaderStates = new ArrayList<>(Arrays.asList("IDLE", "IDLE", "IDLE"));
-        rwWriterStates = new ArrayList<>(Arrays.asList("IDLE", "IDLE"));
+        rwReadCount.set(0);
+        rwWrt.set(1);
+        rwWriting.set(false);
+        Arrays.fill(rwReaderStates, "IDLE");
+        Arrays.fill(rwWriterStates, "IDLE");
         syncLog.clear();
         addLog("[初始化] 读者写者问题演示");
     }
 
-    /**
-     * 读者尝试读取
-     */
-    public synchronized Map<String, Object> readerStep(int readerIndex) {
+    public synchronized Map<String, Object> readerStep(int index) {
         Map<String, Object> result = new HashMap<>();
-        if (rwWriting) {
-            rwReaderStates.set(readerIndex, "BLOCKED");
-            addLog("[读者" + (readerIndex + 1) + "] 尝试读取，但写者正在写入，阻塞！");
+        if (rwWriting.get()) {
+            rwReaderStates[index] = "BLOCKED";
+            addLog("[读者" + (index + 1) + "] 尝试读取，但写者正在写入，阻塞！");
             result.put("event", "BLOCKED");
         } else {
-            rwReadCount++;
-            rwReaderStates.set(readerIndex, "READING");
-            addLog("[读者" + (readerIndex + 1) + "] 开始读取 (readcount=" + rwReadCount + ")");
+            rwReadCount.incrementAndGet();
+            rwReaderStates[index] = "READING";
+            addLog("[读者" + (index + 1) + "] 开始读取 (readcount=" + rwReadCount.get() + ")");
             result.put("event", "READING");
         }
         result.putAll(getReaderWriterStatus());
         return result;
     }
 
-    /**
-     * 读者完成读取
-     */
-    public synchronized Map<String, Object> readerFinish(int readerIndex) {
-        rwReadCount = Math.max(0, rwReadCount - 1);
-        rwReaderStates.set(readerIndex, "IDLE");
-        addLog("[读者" + (readerIndex + 1) + "] 完成读取 (readcount=" + rwReadCount + ")");
+    public synchronized Map<String, Object> readerFinish(int index) {
+        rwReadCount.decrementAndGet();
+        rwReaderStates[index] = "IDLE";
+        addLog("[读者" + (index + 1) + "] 完成读取 (readcount=" + rwReadCount.get() + ")");
         Map<String, Object> result = new HashMap<>();
         result.put("event", "FINISHED");
         result.putAll(getReaderWriterStatus());
         return result;
     }
 
-    /**
-     * 写者尝试写入
-     */
-    public synchronized Map<String, Object> writerStep(int writerIndex) {
+    public synchronized Map<String, Object> writerStep(int index) {
         Map<String, Object> result = new HashMap<>();
-        if (rwWriting || rwReadCount > 0) {
-            rwWriterStates.set(writerIndex, "BLOCKED");
-            addLog("[写者" + (writerIndex + 1) + "] 尝试写入，但资源被占用，阻塞！");
+        if (rwWriting.get() || rwReadCount.get() > 0) {
+            rwWriterStates[index] = "BLOCKED";
+            addLog("[写者" + (index + 1) + "] 尝试写入，但资源被占用，阻塞！");
             result.put("event", "BLOCKED");
         } else {
-            rwWriting = true;
-            rwWriterStates.set(writerIndex, "WRITING");
-            addLog("[写者" + (writerIndex + 1) + "] 开始写入");
+            rwWriting.set(true);
+            rwWriterStates[index] = "WRITING";
+            addLog("[写者" + (index + 1) + "] 开始写入");
             result.put("event", "WRITING");
         }
         result.putAll(getReaderWriterStatus());
         return result;
     }
 
-    /**
-     * 写者完成写入
-     */
-    public synchronized Map<String, Object> writerFinish(int writerIndex) {
-        rwWriting = false;
-        rwWriterStates.set(writerIndex, "IDLE");
-        addLog("[写者" + (writerIndex + 1) + "] 完成写入");
+    public synchronized Map<String, Object> writerFinish(int index) {
+        rwWriting.set(false);
+        rwWriterStates[index] = "IDLE";
+        addLog("[写者" + (index + 1) + "] 完成写入");
         Map<String, Object> result = new HashMap<>();
         result.put("event", "FINISHED");
         result.putAll(getReaderWriterStatus());
@@ -236,52 +295,44 @@ public class SyncDemoService {
 
     public Map<String, Object> getReaderWriterStatus() {
         Map<String, Object> status = new HashMap<>();
-        status.put("readCount", rwReadCount);
-        status.put("isWriting", rwWriting);
-        status.put("readerStates", rwReaderStates);
-        status.put("writerStates", rwWriterStates);
+        status.put("readCount", rwReadCount.get());
+        status.put("wrt", rwWrt.get());
+        status.put("isWriting", rwWriting.get());
+        status.put("readerStates", rwReaderStates.clone());
+        status.put("writerStates", rwWriterStates.clone());
         status.put("log", new ArrayList<>(syncLog));
         return status;
     }
 
-    // ==================== 哲学家进餐 API ====================
+    // ==================== 哲学家进餐 ====================
 
     public void initDiningPhilosophers() {
-        philosopherStates = new String[]{"THINKING", "THINKING", "THINKING", "THINKING", "THINKING"};
-        chopsticks = new boolean[]{false, false, false, false, false};
+        Arrays.fill(philosopherStates, "THINKING");
+        Arrays.fill(chopsticks, false);
         hasDeadlock = false;
         deadlockStrategy = "NONE";
         syncLog.clear();
-        addLog("[初始化] 哲学家进餐问题演示 (5位哲学家, 5根筷子)");
+        addLog("[初始化] 哲学家进餐问题 (5位哲学家, 5根筷子)");
     }
 
-    /**
-     * 哲学家变饿
-     */
     public synchronized Map<String, Object> philosopherGetHungry(int id) {
+        Map<String, Object> result = new HashMap<>();
         if (!"THINKING".equals(philosopherStates[id])) {
-            Map<String, Object> result = new HashMap<>();
             result.put("event", "INVALID");
-            result.put("message", "哲学家" + id + "当前状态不是思考中");
             result.putAll(getDiningStatus());
             return result;
         }
         philosopherStates[id] = "HUNGRY";
-        addLog("[哲学家" + id + "] 变饿了，尝试拿筷子...");
-        Map<String, Object> result = new HashMap<>();
+        addLog("[哲学家" + id + "] 变饿了");
         result.put("event", "HUNGRY");
         result.putAll(getDiningStatus());
         return result;
     }
 
-    /**
-     * 哲学家尝试拿筷子并进餐
-     */
     public synchronized Map<String, Object> philosopherEat(int id) {
         Map<String, Object> result = new HashMap<>();
         if (!"HUNGRY".equals(philosopherStates[id])) {
             result.put("event", "INVALID");
-            result.put("message", "哲学家" + id + "不是饥饿状态");
             result.putAll(getDiningStatus());
             return result;
         }
@@ -289,12 +340,13 @@ public class SyncDemoService {
         int left = id;
         int right = (id + 1) % 5;
 
-        // 死锁策略检查
+        // 策略处理
+        if ("ODD_EVEN".equals(deadlockStrategy) && id % 2 == 0) {
+            left = (id + 1) % 5;
+            right = id;
+        }
         if ("LIMIT_4".equals(deadlockStrategy)) {
-            int eatingCount = 0;
-            for (String s : philosopherStates) {
-                if ("EATING".equals(s)) eatingCount++;
-            }
+            long eatingCount = Arrays.stream(philosopherStates).filter("EATING"::equals).count();
             if (eatingCount >= 4) {
                 philosopherStates[id] = "BLOCKED";
                 addLog("[哲学家" + id + "] 策略限制：最多4人同时进餐，阻塞！");
@@ -302,39 +354,25 @@ public class SyncDemoService {
                 result.putAll(getDiningStatus());
                 return result;
             }
-        } else if ("ODD_EVEN".equals(deadlockStrategy)) {
-            // 奇数先拿左，偶数先拿右
-            if (id % 2 == 0) {
-                left = (id + 1) % 5;
-                right = id;
-            }
         }
 
         if (!chopsticks[left] && !chopsticks[right]) {
-            // 拿到两根筷子，开始进餐
             chopsticks[left] = true;
             chopsticks[right] = true;
             philosopherStates[id] = "EATING";
             addLog("[哲学家" + id + "] 拿到筷子" + left + "和筷子" + right + "，开始进餐");
             result.put("event", "EATING");
         } else {
-            // 拿不到筷子，阻塞
             philosopherStates[id] = "BLOCKED";
             String waitingFor = !chopsticks[left] ? "左手筷子" + left : "右手筷子" + right;
             addLog("[哲学家" + id + "] 等待 " + waitingFor + "，阻塞！");
             result.put("event", "BLOCKED");
-            result.put("message", "等待 " + waitingFor);
-
-            // 检测死锁
             checkDeadlock();
         }
         result.putAll(getDiningStatus());
         return result;
     }
 
-    /**
-     * 哲学家吃完放筷子
-     */
     public synchronized Map<String, Object> philosopherPutChopsticks(int id) {
         Map<String, Object> result = new HashMap<>();
         if (!"EATING".equals(philosopherStates[id])) {
@@ -342,68 +380,39 @@ public class SyncDemoService {
             result.putAll(getDiningStatus());
             return result;
         }
-
         int left = id;
         int right = (id + 1) % 5;
         chopsticks[left] = false;
         chopsticks[right] = false;
         philosopherStates[id] = "THINKING";
         addLog("[哲学家" + id + "] 放下筷子" + left + "和筷子" + right + "，开始思考");
-
-        // 尝试唤醒相邻的阻塞哲学家
-        for (int i = 0; i < 5; i++) {
-            if ("BLOCKED".equals(philosopherStates[i])) {
-                int nextLeft = i;
-                int nextRight = (i + 1) % 5;
-                if (!chopsticks[nextLeft] && !chopsticks[nextRight]) {
-                    // 可以尝试重新进餐
-                    addLog("[系统] 哲学家" + i + " 的筷子可用，可以尝试进餐");
-                }
-            }
-        }
-
         hasDeadlock = false;
         result.put("event", "THINKING");
         result.putAll(getDiningStatus());
         return result;
     }
 
-    /**
-     * 触发死锁（所有人同时拿左手筷子）
-     */
     public synchronized Map<String, Object> triggerDeadlock() {
         addLog("[死锁触发] 所有哲学家同时拿起左手筷子！");
         for (int i = 0; i < 5; i++) {
             philosopherStates[i] = "BLOCKED";
-            chopsticks[i] = true; // 每个人拿左手筷子
+            chopsticks[i] = true;
         }
         hasDeadlock = true;
-        addLog("[死锁检测] 检测到死锁！循环等待条件成立：P0→筷子0→P1→筷子1→...→P4→筷子4→P0");
+        addLog("[死锁检测] 循环等待条件成立：P0→筷子0→P1→筷子1→...→P4→筷子4→P0");
         Map<String, Object> result = new HashMap<>();
         result.put("event", "DEADLOCK");
         result.putAll(getDiningStatus());
         return result;
     }
 
-    /**
-     * 设置死锁避免策略
-     */
     public void setDeadlockStrategy(String strategy) {
         this.deadlockStrategy = strategy;
-        addLog("[策略切换] 死锁避免策略: " + strategy);
+        addLog("[策略切换] " + strategy);
     }
 
-    /**
-     * 检测死锁
-     */
     private void checkDeadlock() {
-        boolean allBlocked = true;
-        for (String s : philosopherStates) {
-            if (!"BLOCKED".equals(s)) {
-                allBlocked = false;
-                break;
-            }
-        }
+        boolean allBlocked = Arrays.stream(philosopherStates).allMatch("BLOCKED"::equals);
         if (allBlocked) {
             hasDeadlock = true;
             addLog("[死锁检测] 所有哲学家都阻塞！检测到死锁！");
@@ -420,26 +429,14 @@ public class SyncDemoService {
         return status;
     }
 
-    // ==================== 通用方法 ====================
+    // ==================== 通用 ====================
 
     public void addLog(String message) {
-        long timestamp = System.currentTimeMillis();
-        syncLog.add("[" + timestamp + "] " + message);
-        // 保留最近100条
-        while (syncLog.size() > 100) {
-            syncLog.remove(0);
-        }
+        long ts = System.currentTimeMillis();
+        syncLog.add("[" + ts + "] " + message);
+        while (syncLog.size() > 100) syncLog.remove(0);
     }
 
-    public List<String> getLog() {
-        return new ArrayList<>(syncLog);
-    }
-
-    public void clearLog() {
-        syncLog.clear();
-    }
-
-    public void setRunning(boolean running) {
-        this.isRunning = running;
-    }
+    public List<String> getLog() { return new ArrayList<>(syncLog); }
+    public void clearLog() { syncLog.clear(); }
 }

@@ -26,25 +26,20 @@ public class SyncLabController {
         return syncDemoService.getProducerConsumerStatus();
     }
 
-    @PostMapping("/pc/produce")
-    public Map<String, Object> produce() {
-        return syncDemoService.producerStep();
-    }
-
-    @PostMapping("/pc/consume")
-    public Map<String, Object> consume() {
-        return syncDemoService.consumerStep();
-    }
-
-    @PostMapping("/pc/wake-producer")
-    public Map<String, Object> wakeProducer() {
-        syncDemoService.wakeProducer();
+    /**
+     * 启动多线程生产者消费者
+     */
+    @PostMapping("/pc/start")
+    public Map<String, Object> startProducerConsumer(@RequestBody Map<String, Integer> request) {
+        int producers = request.getOrDefault("producers", 2);
+        int consumers = request.getOrDefault("consumers", 2);
+        syncDemoService.startProducerConsumer(producers, consumers);
         return syncDemoService.getProducerConsumerStatus();
     }
 
-    @PostMapping("/pc/wake-consumer")
-    public Map<String, Object> wakeConsumer() {
-        syncDemoService.wakeConsumer();
+    @PostMapping("/pc/stop")
+    public Map<String, Object> stopProducerConsumer() {
+        syncDemoService.stopProducerConsumer();
         return syncDemoService.getProducerConsumerStatus();
     }
 
