@@ -20,6 +20,39 @@ public class IoController {
 
     // ==================== 独占设备 ====================
 
+    /**
+     * Word/Excel 点击"打印"按钮
+     */
+    @PostMapping("/print")
+    public Map<String, Object> print(@RequestBody Map<String, Object> request) {
+        int pid = (int) request.get("pid");
+        String name = (String) request.get("processName");
+        boolean success = ioManager.requestExclusiveDevice("PRINTER", pid, name);
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", success);
+        if (!success) {
+            result.put("message", "打印机已被占用，进程进入等待队列");
+        } else {
+            result.put("message", "已占用打印机");
+        }
+        result.putAll(ioManager.getAllExclusiveDeviceStatus());
+        return result;
+    }
+
+    /**
+     * 打印完成释放打印机
+     */
+    @PostMapping("/print-done")
+    public Map<String, Object> printDone(@RequestBody Map<String, Object> request) {
+        int pid = (int) request.get("pid");
+        Integer wokenPid = ioManager.releaseExclusiveDevice("PRINTER", pid);
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("wokenPid", wokenPid);
+        result.putAll(ioManager.getAllExclusiveDeviceStatus());
+        return result;
+    }
+
     @PostMapping("/exclusive/request")
     public Map<String, Object> requestExclusive(@RequestBody Map<String, Object> request) {
         String device = (String) request.get("device");

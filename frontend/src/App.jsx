@@ -172,6 +172,28 @@ function App() {
 }
 
 function AppProcessView({ appName, pid, process, onTerminate }) {
+  const [printStatus, setPrintStatus] = useState(null)
+
+  const canPrint = ['Word', 'Excel', '记事本', 'PDF'].some(n => appName.includes(n))
+
+  const doPrint = async () => {
+    try {
+      const res = await axios.post('/api/io/print', { pid, processName: appName })
+      if (res.data.success) {
+        setPrintStatus('PRINTING')
+        // 模拟打印 3 秒
+        setTimeout(async () => {
+          await axios.post('/api/io/print-done', { pid })
+          setPrintStatus('DONE')
+          setTimeout(() => setPrintStatus(null), 2000)
+        }, 3000)
+      } else {
+        setPrintStatus('BLOCKED')
+        setTimeout(() => setPrintStatus(null), 3000)
+      }
+    } catch {}
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '16px', color: '#ededef' }}>
       <div style={{ fontSize: '64px' }}>{process?.icon || '📱'}</div>
@@ -184,7 +206,20 @@ function AppProcessView({ appName, pid, process, onTerminate }) {
           <div>内存: <span style={{ color: '#f43f5e' }}>{process.currentMemoryUsage || 0}MB</span></div>
         </div>
       ) : <div style={{ color: '#888' }}>进程已结束</div>}
-      <button onClick={() => onTerminate(pid)} style={{ padding: '8px 20px', background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', cursor: 'pointer' }}>结束进程</button>
+      <div style={{ display: 'flex', gap: '8px' }}>
+        {canPrint && (
+          <button onClick={doPrint} disabled={printStatus === 'PRINTING'} style={{
+            padding: '8px 20px', borderRadius: '6px', cursor: printStatus === 'PRINTING' ? 'not-allowed' : 'pointer',
+            background: printStatus === 'BLOCKED' ? 'rgba(255,215,0,0.15)' : printStatus === 'PRINTING' ? 'rgba(0,255,136,0.15)' : 'rgba(0,240,255,0.15)',
+            color: printStatus === 'BLOCKED' ? '#ffd700' : printStatus === 'PRINTING' ? '#00ff88' : '#00f0ff',
+            border: `1px solid ${printStatus === 'BLOCKED' ? 'rgba(255,215,0,0.3)' : 'rgba(0,240,255,0.3)'}`,
+            fontSize: '13px'
+          }}>
+            🖨️ {printStatus === 'PRINTING' ? '打印中...' : printStatus === 'BLOCKED' ? '等待打印机...' : printStatus === 'DONE' ? '打印完成！' : '打印'}
+          </button>
+        )}
+        <button onClick={() => onTerminate(pid)} style={{ padding: '8px 20px', background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', cursor: 'pointer' }}>结束进程</button>
+      </div>
     </div>
   )
 }

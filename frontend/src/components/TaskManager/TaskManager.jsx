@@ -251,6 +251,7 @@ function TaskManager({ processes, systemStatus, onTerminate, onSuspend, onResume
                   { key: 'pid', label: 'PID', width: 60 }, { key: 'state', label: '状态', width: 70 },
                   { key: 'cpuUsage', label: 'CPU', width: 70 }, { key: 'currentMemoryUsage', label: '内存', width: 80 },
                   { key: 'diskRead', label: '磁盘读', width: 70 }, { key: 'networkSpeed', label: '网络', width: 70 },
+                  { key: 'device', label: '设备', width: 100 },
                   { key: 'actions', label: '操作', width: 120 },
                 ].map(col => (
                   <th key={col.key} onClick={() => col.key !== 'icon' && col.key !== 'actions' && handleSort(col.key)}
@@ -308,6 +309,19 @@ function TaskManager({ processes, systemStatus, onTerminate, onSuspend, onResume
                     <td style={{ padding: '8px 12px' }}><CyberValue value={p.currentMemoryUsage || 0} unit="MB" color={CYBER.magenta} size="12px" /></td>
                     <td style={{ padding: '8px 12px', color: CYBER.textDim }}>{p.diskRead || 0}MB/s</td>
                     <td style={{ padding: '8px 12px', color: CYBER.textDim }}>{p.networkSpeed || 0}KB/s</td>
+                    <td style={{ padding: '8px 12px', fontSize: '11px' }}>
+                      {p.occupiedDevice ? (
+                        <span style={{ color: CYBER.green, textShadow: `0 0 4px ${CYBER.green}40` }}>
+                          {p.occupiedDevice === '打印机' ? '🖨️' : p.occupiedDevice === '耳机' ? '🎧' : '💾'} {p.occupiedDevice}
+                        </span>
+                      ) : p.blockedReason ? (
+                        <span style={{ color: CYBER.yellow, textShadow: `0 0 4px ${CYBER.yellow}40` }}>
+                          ⏳ {p.blockedReason}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#444' }}>-</span>
+                      )}
+                    </td>
                     <td style={{ padding: '8px 12px' }}>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         {p.state === 'RUNNING' ? (

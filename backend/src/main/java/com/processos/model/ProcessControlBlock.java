@@ -29,6 +29,8 @@ public class ProcessControlBlock {
     private int diskWrite;        // 磁盘写入速度 (MB/s)
     private int networkSpeed;     // 网络速度 (KB/s)
     private int coreIndex;        // 分配的 CPU 核心索引，-1 表示未分配
+    private String blockedReason; // 阻塞原因（如"等待打印机"、"等待磁盘I/O"）
+    private String occupiedDevice; // 当前占用的设备名称（如"打印机"、"耳机"）
 
     public ProcessControlBlock() {}
 
@@ -122,4 +124,10 @@ public class ProcessControlBlock {
 
     public int getCoreIndex() { return coreIndex; }
     public void setCoreIndex(int coreIndex) { this.coreIndex = coreIndex; }
+
+    public String getBlockedReason() { return blockedReason; }
+    public void setBlockedReason(String blockedReason) { this.blockedReason = blockedReason; }
+
+    public String getOccupiedDevice() { return occupiedDevice; }
+    public void setOccupiedDevice(String occupiedDevice) { this.occupiedDevice = occupiedDevice; }
 }

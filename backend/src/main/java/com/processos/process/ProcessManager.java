@@ -1,6 +1,7 @@
 package com.processos.process;
 
 import com.processos.hardware.HardwarePool;
+import com.processos.hardware.IoManager;
 import com.processos.model.ProcessControlBlock;
 import com.processos.model.ProcessState;
 import com.processos.model.SimulatedApp;
@@ -24,6 +25,9 @@ public class ProcessManager {
 
     @Autowired
     private SystemEventService eventService;
+
+    @Autowired
+    private IoManager ioManager;
 
     // 活跃进程表（Active Process Table）
     private final List<ProcessControlBlock> processTable = new CopyOnWriteArrayList<>();
@@ -101,6 +105,12 @@ public class ProcessManager {
             "启动进程 " + app.getName() + " (PID: " + mainProcess.getPid() + "), 分配内存 " + app.getMemoryRequired() + "MB" +
             (childCount > 0 ? ", 自动创建 " + childCount + " 个子进程" : ""),
             mainProcess.getPid(), app.getName());
+
+        // 游戏类和音乐类应用自动注册耳机（共享设备）
+        if (app.name().equals("CSGO") || app.name().equals("PUBG") || app.name().equals("MUSIC")
+            || app.name().equals("VIDEO") || app.name().equals("MINECRAFT")) {
+            ioManager.audioPlay(mainProcess.getPid(), app.getName());
+        }
 
         return new Object[]{mainProcess.getPid()};
     }
@@ -197,6 +207,11 @@ public class ProcessManager {
         hardwarePool.freeMemory(pid);
         hardwarePool.freeAllCpuCores(pid);
         processTable.remove(pcb);
+
+        // 释放所有设备：耳机 + 独占设备
+        ioManager.audioStop(pid);
+        ioManager.releaseExclusiveDevice("PRINTER", pid);
+        ioManager.releaseExclusiveDevice("USB_DISK", pid);
 
         eventService.warning("PROCESS_MGR",
             "进程 " + pcb.getName() + " (PID: " + pid + ") 被终止, 回收内存 " + freedMem + "MB" +
