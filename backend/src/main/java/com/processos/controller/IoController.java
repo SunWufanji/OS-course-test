@@ -18,6 +18,9 @@ public class IoController {
     @Autowired
     private IoManager ioManager;
 
+    @Autowired
+    private com.processos.process.ProcessManager processManager;
+
     // ==================== 独占设备 ====================
 
     /**
@@ -28,13 +31,21 @@ public class IoController {
         int pid = (int) request.get("pid");
         String name = (String) request.get("processName");
         boolean success = ioManager.requestExclusiveDevice("PRINTER", pid, name);
+
+        // 更新 PCB 状态
+        var pcb = processManager.findProcess(pid);
+        if (pcb != null) {
+            if (success) {
+                pcb.setOccupiedDevice("打印机");
+            } else {
+                pcb.setState(com.processos.model.ProcessState.BLOCKED);
+                pcb.setBlockedReason("等待打印机");
+            }
+        }
+
         Map<String, Object> result = new HashMap<>();
         result.put("success", success);
-        if (!success) {
-            result.put("message", "打印机已被占用，进程进入等待队列");
-        } else {
-            result.put("message", "已占用打印机");
-        }
+        result.put("message", success ? "已占用打印机" : "打印机已被占用，进程进入等待队列");
         result.putAll(ioManager.getAllExclusiveDeviceStatus());
         return result;
     }
@@ -46,6 +57,23 @@ public class IoController {
     public Map<String, Object> printDone(@RequestBody Map<String, Object> request) {
         int pid = (int) request.get("pid");
         Integer wokenPid = ioManager.releaseExclusiveDevice("PRINTER", pid);
+
+        // 释放当前进程的设备占用
+        var pcb = processManager.findProcess(pid);
+        if (pcb != null) {
+            pcb.setOccupiedDevice(null);
+        }
+
+        // 唤醒等待队列中的下一个进程
+        if (wokenPid != null) {
+            var woken = processManager.findProcess(wokenPid);
+            if (woken != null) {
+                woken.setState(com.processos.model.ProcessState.RUNNING);
+                woken.setBlockedReason(null);
+                woken.setOccupiedDevice("打印机");
+            }
+        }
+
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
         result.put("wokenPid", wokenPid);
