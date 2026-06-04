@@ -175,22 +175,46 @@ function AppProcessView({ appName, pid, process, onTerminate }) {
   const [printStatus, setPrintStatus] = useState(null)
 
   const canPrint = ['Word', 'Excel', '记事本', 'PDF'].some(n => appName.includes(n) || appName.startsWith(n))
+  const canWriteDisk = ['下载工具', '系统更新'].some(n => appName.includes(n))
+  const [writeDiskStatus, setWriteDiskStatus] = useState(null)
+
+  const doWriteDisk = async () => {
+    try {
+      const res = await axios.post('/api/io/exclusive/request', { device: 'USB_DISK', pid, processName: appName })
+      if (res.data.success) {
+        setWriteDiskStatus('WRITING')
+      } else {
+        setWriteDiskStatus('BLOCKED')
+        setTimeout(() => setWriteDiskStatus(null), 2000)
+      }
+    } catch {}
+  }
+
+  const doWriteDiskDone = async () => {
+    try {
+      await axios.post('/api/io/exclusive/release', { device: 'USB_DISK', pid })
+      setWriteDiskStatus('DONE')
+      setTimeout(() => setWriteDiskStatus(null), 1500)
+    } catch {}
+  }
 
   const doPrint = async () => {
     try {
       const res = await axios.post('/api/io/print', { pid, processName: appName })
       if (res.data.success) {
         setPrintStatus('PRINTING')
-        // 模拟打印 3 秒
-        setTimeout(async () => {
-          await axios.post('/api/io/print-done', { pid })
-          setPrintStatus('DONE')
-          setTimeout(() => setPrintStatus(null), 2000)
-        }, 3000)
       } else {
         setPrintStatus('BLOCKED')
-        setTimeout(() => setPrintStatus(null), 3000)
+        setTimeout(() => setPrintStatus(null), 2000)
       }
+    } catch {}
+  }
+
+  const doPrintDone = async () => {
+    try {
+      await axios.post('/api/io/print-done', { pid })
+      setPrintStatus('DONE')
+      setTimeout(() => setPrintStatus(null), 1500)
     } catch {}
   }
 
@@ -207,16 +231,56 @@ function AppProcessView({ appName, pid, process, onTerminate }) {
         </div>
       ) : <div style={{ color: '#888' }}>进程已结束</div>}
       <div style={{ display: 'flex', gap: '8px' }}>
-        {canPrint && (
-          <button onClick={doPrint} disabled={printStatus === 'PRINTING'} style={{
-            padding: '8px 20px', borderRadius: '6px', cursor: printStatus === 'PRINTING' ? 'not-allowed' : 'pointer',
-            background: printStatus === 'BLOCKED' ? 'rgba(255,215,0,0.15)' : printStatus === 'PRINTING' ? 'rgba(0,255,136,0.15)' : 'rgba(0,240,255,0.15)',
-            color: printStatus === 'BLOCKED' ? '#ffd700' : printStatus === 'PRINTING' ? '#00ff88' : '#00f0ff',
-            border: `1px solid ${printStatus === 'BLOCKED' ? 'rgba(255,215,0,0.3)' : 'rgba(0,240,255,0.3)'}`,
-            fontSize: '13px'
-          }}>
-            🖨️ {printStatus === 'PRINTING' ? '打印中...' : printStatus === 'BLOCKED' ? '等待打印机...' : printStatus === 'DONE' ? '打印完成！' : '打印'}
-          </button>
+        {canPrint && !printStatus && (
+          <button onClick={doPrint} style={{
+            padding: '8px 20px', borderRadius: '6px', cursor: 'pointer',
+            background: 'rgba(0,240,255,0.15)', color: '#00f0ff',
+            border: '1px solid rgba(0,240,255,0.3)', fontSize: '13px'
+          }}>🖨️ 打印</button>
+        )}
+        {canPrint && printStatus === 'PRINTING' && (
+          <button onClick={doPrintDone} style={{
+            padding: '8px 20px', borderRadius: '6px', cursor: 'pointer',
+            background: 'rgba(0,255,136,0.15)', color: '#00ff88',
+            border: '1px solid rgba(0,255,136,0.3)', fontSize: '13px',
+            animation: 'breathe 1.5s ease-in-out infinite'
+          }}>✅ 打印完成</button>
+        )}
+        {canPrint && printStatus === 'BLOCKED' && (
+          <button disabled style={{
+            padding: '8px 20px', borderRadius: '6px',
+            background: 'rgba(255,215,0,0.15)', color: '#ffd700',
+            border: '1px solid rgba(255,215,0,0.3)', fontSize: '13px'
+          }}>⏳ 等待打印机...</button>
+        )}
+        {canPrint && printStatus === 'DONE' && (
+          <button disabled style={{
+            padding: '8px 20px', borderRadius: '6px',
+            background: 'rgba(0,255,136,0.1)', color: '#00ff88',
+            border: '1px solid rgba(0,255,136,0.2)', fontSize: '13px'
+          }}>✓ 打印完成</button>
+        )}
+        {canWriteDisk && !writeDiskStatus && (
+          <button onClick={doWriteDisk} style={{
+            padding: '8px 20px', borderRadius: '6px', cursor: 'pointer',
+            background: 'rgba(255,215,0,0.15)', color: '#ffd700',
+            border: '1px solid rgba(255,215,0,0.3)', fontSize: '13px'
+          }}>💾 写入U盘</button>
+        )}
+        {canWriteDisk && writeDiskStatus === 'WRITING' && (
+          <button onClick={doWriteDiskDone} style={{
+            padding: '8px 20px', borderRadius: '6px', cursor: 'pointer',
+            background: 'rgba(0,255,136,0.15)', color: '#00ff88',
+            border: '1px solid rgba(0,255,136,0.3)', fontSize: '13px',
+            animation: 'breathe 1.5s ease-in-out infinite'
+          }}>✅ 写入完成</button>
+        )}
+        {canWriteDisk && writeDiskStatus === 'BLOCKED' && (
+          <button disabled style={{
+            padding: '8px 20px', borderRadius: '6px',
+            background: 'rgba(255,215,0,0.15)', color: '#ffd700',
+            border: '1px solid rgba(255,215,0,0.3)', fontSize: '13px'
+          }}>⏳ 等待U盘...</button>
         )}
         <button onClick={() => onTerminate(pid)} style={{ padding: '8px 20px', background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', cursor: 'pointer' }}>结束进程</button>
       </div>

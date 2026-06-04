@@ -206,7 +206,6 @@ function IoDeviceManager() {
   const tabs = [
     { id: 'exclusive', label: '独占设备', icon: '🖨️' },
     { id: 'shared', label: '共享设备', icon: '🎧' },
-    { id: 'disk', label: '磁盘调度', icon: '💿' },
   ]
 
   return (
@@ -225,7 +224,6 @@ function IoDeviceManager() {
       <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
         {activeTab === 'exclusive' && <ExclusiveDevicesTab exclusiveStatus={exclusiveStatus} />}
         {activeTab === 'shared' && <SharedDevicesTab audioStatus={audioStatus} />}
-        {activeTab === 'disk' && <DiskSchedulerTab diskStatus={diskStatus} />}
       </div>
     </div>
   )

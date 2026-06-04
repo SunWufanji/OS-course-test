@@ -178,7 +178,7 @@ public class ProcessManager {
 
         int coreIndex = hardwarePool.allocateCpuCore(pid);
 
-        ProcessControlBlock pcb = new ProcessControlBlock(pid, app.getName(), 0, 3, 0, color);
+        ProcessControlBlock pcb = new ProcessControlBlock(pid, displayName, 0, 3, 0, color);
         pcb.setState(ProcessState.RUNNING);
         pcb.setAppType(app.name());
         pcb.setIcon(app.getIcon());
