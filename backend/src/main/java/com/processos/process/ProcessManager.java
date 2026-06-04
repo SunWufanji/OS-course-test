@@ -351,6 +351,10 @@ public class ProcessManager {
         for (ProcessControlBlock pcb : processTable) {
             hardwarePool.freeMemory(pcb.getPid());
             hardwarePool.freeAllCpuCores(pcb.getPid());
+            // 释放所有 I/O 设备
+            ioManager.audioStop(pcb.getPid());
+            ioManager.releaseExclusiveDevice("PRINTER", pcb.getPid());
+            ioManager.releaseExclusiveDevice("USB_DISK", pcb.getPid());
         }
         processTable.clear();
     }
