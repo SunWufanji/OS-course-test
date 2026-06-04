@@ -130,9 +130,8 @@ public class SyncDemoService {
                 pcMutex.incrementAndGet();
                 synchronized (pcMutex) { pcMutex.notify(); }
 
-                // V(full) — 通知消费者
-                pcFull.incrementAndGet();
-                synchronized (pcFull) { pcFull.notify(); }
+                // V(full) — 通知消费者（只通知，不再 increment）
+                synchronized (pcFull) { pcFull.notifyAll(); }
 
                 pcProducerStates.put(id, "IDLE");
 
@@ -179,11 +178,10 @@ public class SyncDemoService {
 
                 // V(mutex) — 离开临界区
                 pcMutex.incrementAndGet();
-                synchronized (pcMutex) { pcMutex.notify(); }
+                synchronized (pcMutex) { pcMutex.notifyAll(); }
 
-                // V(empty) — 通知生产者
-                pcEmpty.incrementAndGet();
-                synchronized (pcEmpty) { pcEmpty.notify(); }
+                // V(empty) — 通知生产者（只通知，不再 increment）
+                synchronized (pcEmpty) { pcEmpty.notifyAll(); }
 
                 pcConsumerStates.put(id, "IDLE");
 
