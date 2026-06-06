@@ -28,6 +28,12 @@ const ALL_APPS = [
   { name: '系统更新', icon: '🔄', app: '系统更新', category: '系统' },
   { name: '音乐播放器', icon: '🎵', app: '音乐播放器', category: '娱乐' },
   { name: '视频播放器', icon: '🎬', app: '视频播放器', category: '娱乐' },
+  // IPC 演示
+  { name: 'IPC-发送方', icon: '📤', app: 'IPC-发送方', category: 'IPC演示' },
+  { name: 'IPC-接收方', icon: '📥', app: 'IPC-接收方', category: 'IPC演示' },
+  // 打印机互斥演示
+  { name: '打印-先行者', icon: '🖨️', app: '打印-先行者', category: '打印机演示' },
+  { name: '打印-等待者', icon: '⏳', app: '打印-等待者', category: '打印机演示' },
 ]
 
 function AppLauncher({ isOpen, onClose, onLaunchApp, onOpenTaskManager, onOpenKernelLab, onOpenSystemLog, onOpenSyncLab, onOpenIoDevice }) {

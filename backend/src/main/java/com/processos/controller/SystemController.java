@@ -133,4 +133,93 @@ public class SystemController {
         result.put("success", true);
         return result;
     }
+
+    /**
+     * 获取CPU寄存器快照
+     */
+    @GetMapping("/system/registers")
+    public Map<String, Object> getCpuRegisters() {
+        return processManager.getCpuCore().getRegisterSnapshot();
+    }
+
+    /**
+     * 获取所有进程的MAAWS调度分数
+     */
+    @GetMapping("/system/maaws-scores")
+    public List<Map<String, Object>> getMaawsScores() {
+        return processManager.getAllMaawsScores();
+    }
+
+    /**
+     * 获取中断日志
+     */
+    @GetMapping("/system/interrupt-log")
+    public List<Map<String, Object>> getInterruptLog() {
+        return processManager.getInterruptLog();
+    }
+
+    /**
+     * 获取调度队列状态（就绪队列、阻塞队列、运行进程）
+     */
+    @GetMapping("/system/scheduler")
+    public Map<String, Object> getSchedulerState() {
+        Map<String, Object> result = new HashMap<>();
+        result.put("runningProcess", processManager.getRunningProcess());
+        result.put("readyQueue", processManager.getReadyQueue());
+        result.put("blockedQueue", processManager.getBlockedQueue());
+        result.put("q0", processManager.getQ0());
+        result.put("q1", processManager.getQ1());
+        result.put("q2", processManager.getQ2());
+        result.put("currentQueueLevel", processManager.getCurrentQueueLevel());
+        result.put("clockTick", processManager.getClockTick());
+        result.put("paused", processManager.isPaused());
+        return result;
+    }
+
+    /**
+     * 暂停/恢复CPU时钟中断
+     */
+    @PostMapping("/system/pause")
+    public Map<String, Object> togglePause() {
+        boolean nowPaused = processManager.togglePause();
+        return Map.of("paused", nowPaused);
+    }
+
+    /**
+     * 单步模式：每步自动暂停
+     */
+    @PostMapping("/system/auto-pause")
+    public Map<String, Object> toggleAutoPause() {
+        boolean nowAutoPause = processManager.toggleAutoPause();
+        return Map.of("autoPause", nowAutoPause, "paused", processManager.isPaused());
+    }
+
+    /**
+     * 单步执行（暂停状态下执行一个时钟滴答）
+     */
+    @PostMapping("/system/step")
+    public Map<String, Object> step() {
+        processManager.tickForced();   // 绕过 paused 检查，执行后自动保持 paused
+        hardwarePool.updateIoUsage(processManager.getAllProcesses().size());
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("clockTick", processManager.getClockTick());
+        return result;
+    }
+
+    /**
+     * 连续运行：执行一个tick（已暂停则跳过，由前端定时调用）
+     */
+    @PostMapping("/system/run")
+    public Map<String, Object> run() {
+        Map<String, Object> result = new HashMap<>();
+        if (!processManager.isPaused()) {
+            processManager.tick();
+            hardwarePool.updateIoUsage(processManager.getAllProcesses().size());
+        }
+        result.put("success", true);
+        result.put("clockTick", processManager.getClockTick());
+        result.put("paused", processManager.isPaused());
+        return result;
+    }
 }

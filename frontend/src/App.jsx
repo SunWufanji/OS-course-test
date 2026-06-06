@@ -10,6 +10,7 @@ import SyncLab from './components/SyncLab/SyncLab'
 import IoDeviceManager from './components/Desktop/IODeviceManager'
 import ControlCenter from './components/Desktop/ControlCenter'
 import AppLauncher from './components/Desktop/AppLauncher'
+import TerminalWindow from './components/Desktop/TerminalWindow'
 
 const API_BASE = '/api'
 
@@ -34,6 +35,8 @@ function App() {
   }, [])
 
   const launchApp = async (appName) => {
+    // 终端是纯 UI 工具，不占进程槽
+    if (appName === '终端') { openWindow('终端', {}); return }
     try {
       const res = await axios.post(`${API_BASE}/process/launch`, { appName })
       if (res.data.success) {
@@ -71,6 +74,7 @@ function App() {
       '系统日志': { title: '系统事件查看器', icon: '📋', component: 'SystemLog', width: 900, height: 520 },
       '同步互斥实验室': { title: '同步互斥实验室', icon: '🔒', component: 'SyncLab', width: 860, height: 560 },
       'I/O设备管理': { title: 'I/O 设备管理器', icon: '🔧', component: 'IoDeviceManager', width: 700, height: 500 },
+      '终端': { title: '终端', icon: '⬛', component: 'Terminal', width: 700, height: 460 },
     }
     if (configs[appName]) return configs[appName]
     const app = availableApps.find(a => a.name === appName)
@@ -136,6 +140,15 @@ function App() {
           {win.component === 'AppProcess' && (
             <AppProcessView appName={win.title} pid={win.pid}
               process={sandboxProcesses.find(p => p.pid === win.pid)} onTerminate={terminateProcess} />
+          )}
+          {win.component === 'Terminal' && (
+            <TerminalWindow
+              sandboxProcesses={sandboxProcesses}
+              onLaunchApp={launchApp}
+              onTerminate={terminateProcess}
+              onSuspend={suspendProcess}
+              onResume={resumeProcess}
+            />
           )}
         </Window>
       ))}
