@@ -39,7 +39,10 @@ function App() {
     if (appName === '终端') { openWindow('终端', {}); return }
     try {
       const res = await axios.post(`${API_BASE}/process/launch`, { appName })
-      if (res.data.success) {
+      if (res.data.success && res.data.waitingMemory) {
+        // 内存不足，进程已进入阻塞队列
+        fetchSandboxProcesses()
+      } else if (res.data.success) {
         openWindow(appName, res.data.process)
         fetchSandboxProcesses()
       } else if (res.data.alreadyRunning) {

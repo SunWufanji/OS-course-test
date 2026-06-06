@@ -165,6 +165,8 @@ function KernelPanel({ processes, systemStatus, refreshTrigger }) {
   const [scheduler, setScheduler] = useState({})
   const [interruptLog, setInterruptLog] = useState([])
   const [maawsScores, setMaawsScores] = useState([])
+  const [expandedPid, setExpandedPid] = useState(null)
+  const [codeSegments, setCodeSegments] = useState({}) // pid → codeSegment[]
   const safeScores = Array.isArray(maawsScores) ? maawsScores : []
 
   const fetchData = useCallback(async () => {
@@ -342,26 +344,70 @@ function KernelPanel({ processes, systemStatus, refreshTrigger }) {
       <div style={{ display: 'flex', gap: '6px' }}>
         {/* 左侧：进程列表 */}
         <div style={{ flex: '1.2 1 0', minWidth: 0 }}>
-          <div style={sectionTitleStyle(CYBER.cyan)}>📋 进程列表 ({(processes||[]).filter(p=>p.state!=='TERMINATED').length})</div>
-          <div style={{...queueBoxStyle, maxHeight: '140px', overflow: 'auto', padding: '3px'}}>
+          <div style={sectionTitleStyle(CYBER.cyan)}>📋 进程列表 ({(processes||[]).filter(p=>p.state!=='TERMINATED').length}) <span style={{fontSize:'8px',color:CYBER.textDim}}>— 点击行展开代码段</span></div>
+          <div style={{...queueBoxStyle, maxHeight: '220px', overflow: 'auto', padding: '3px'}}>
             <table style={miniTableStyle}><thead><tr>
               <th style={thStyle}>PID</th><th style={thStyle}>名称</th><th style={thStyle}>状态</th>
               <th style={thStyle}>PC</th><th style={thStyle}>当前指令</th>
               <th style={thStyle}>内存</th>
             </tr></thead><tbody>
-              {(processes||[]).filter(p => p.state !== 'TERMINATED').map(p => (
-                <tr key={p.pid} style={{...trStyle, background: p.state === 'RUNNING' ? 'rgba(0,255,136,0.04)' : 'transparent'}}>
-                  <td style={tdStyle}>{p.pid}</td>
-                  <td style={{...tdStyle, color: blockColors[p.pid] || CYBER.cyan, whiteSpace:'nowrap'}}>{p.icon||'📱'} {p.name}</td>
-                  <td style={tdStyle}><span style={{color: stateColor[p.state] || '#666', fontSize: '9px', fontWeight: 600}}>{stateLabel[p.state] || p.state}</span></td>
-                  <td style={{...tdStyle, fontFamily: 'monospace', fontSize:'9px'}}>{p.programCounter ?? 0}</td>
-                  <td style={{...tdStyle, fontFamily: 'monospace', fontSize:'9px', color: CYBER.textDim}}>{p.ir ?? Math.max(0, (p.programCounter ?? 1) - 1)}</td>
-                  <td style={{...tdStyle, fontFamily: 'monospace', fontSize:'8px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: p.state === 'RUNNING' ? CYBER.text : CYBER.textDim}}>
-                    {p.currentCodeLine ? p.currentCodeLine.split(';')[0] : '-'}
-                  </td>
-                  <td style={{...tdStyle, fontSize:'9px'}}>{p.currentMemoryUsage || 0}MB</td>
-                </tr>
-              ))}
+              {(processes||[]).filter(p => p.state !== 'TERMINATED').map(p => {
+                const isExpanded = expandedPid === p.pid
+                const code = codeSegments[p.pid] || p.codeSegment || []
+                const pc = p.programCounter ?? 0
+                return (
+                  <React.Fragment key={p.pid}>
+                    <tr
+                      style={{...trStyle, background: p.state === 'RUNNING' ? 'rgba(0,255,136,0.04)' : 'transparent', cursor: 'pointer'}}
+                      onClick={() => {
+                        if (isExpanded) { setExpandedPid(null); return }
+                        setExpandedPid(p.pid)
+                        // 从 PCB 里直接用 codeSegment（已在进程列表里）
+                        if (p.codeSegment) setCodeSegments(prev => ({...prev, [p.pid]: p.codeSegment}))
+                      }}
+                    >
+                      <td style={tdStyle}>{p.pid}</td>
+                      <td style={{...tdStyle, color: blockColors[p.pid] || CYBER.cyan, whiteSpace:'nowrap'}}>{p.icon||'📱'} {p.name} {isExpanded ? '▲' : '▶'}</td>
+                      <td style={tdStyle}><span style={{color: stateColor[p.state] || '#666', fontSize: '9px', fontWeight: 600}}>{stateLabel[p.state] || p.state}</span></td>
+                      <td style={{...tdStyle, fontFamily: 'monospace', fontSize:'9px'}}>{pc}</td>
+                      <td style={{...tdStyle, fontFamily: 'monospace', fontSize:'9px', color: CYBER.textDim}}>{p.ir ?? Math.max(0, pc - 1)}</td>
+                      <td style={{...tdStyle, fontFamily: 'monospace', fontSize:'8px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: p.state === 'RUNNING' ? CYBER.text : CYBER.textDim}}>
+                        {p.currentCodeLine ? p.currentCodeLine.split(';')[0] : '-'}
+                      </td>
+                      <td style={{...tdStyle, fontSize:'9px'}}>{p.currentMemoryUsage || 0}MB</td>
+                    </tr>
+                    {isExpanded && code.length > 0 && (
+                      <tr>
+                        <td colSpan={7} style={{padding: '4px 8px', background: 'rgba(0,0,0,0.4)'}}>
+                          <div style={{fontFamily: 'monospace', fontSize: '9px', maxHeight: '120px', overflow: 'auto'}}>
+                            {code.map((line, idx) => {
+                              const isDone = idx < pc - 1
+                              const isCurrent = idx === pc - 1
+                              const isPending = idx >= pc
+                              return (
+                                <div key={idx} style={{
+                                  display: 'flex', gap: '6px', padding: '1px 4px',
+                                  background: isCurrent ? 'rgba(0,255,136,0.12)' : 'transparent',
+                                  borderLeft: isCurrent ? `2px solid ${CYBER.green}` : '2px solid transparent',
+                                }}>
+                                  <span style={{color: '#444', minWidth: '20px', textAlign: 'right'}}>{idx}</span>
+                                  <span style={{
+                                    color: isDone ? '#334' : isCurrent ? CYBER.green : CYBER.textDim,
+                                    textDecoration: isDone ? 'line-through' : 'none',
+                                    flex: 1,
+                                  }}>
+                                    {isCurrent && '▸ '}{line}
+                                  </span>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                )
+              })}
               {(processes||[]).filter(p => p.state !== 'TERMINATED').length === 0 && (
                 <tr><td colSpan={7} style={emptyStyle}>无活跃进程</td></tr>
               )}
@@ -446,15 +492,21 @@ function KernelPanel({ processes, systemStatus, refreshTrigger }) {
       </div>
 
       {/* 中断日志 */}
-      <HudPanel title="📜 运行日志">
-        <div style={{ maxHeight: '120px', overflow: 'auto', fontSize: '9px', fontFamily: 'monospace' }}>
+      <HudPanel title="📜 运行日志（调度事件链）">
+        <div style={{ maxHeight: '180px', overflow: 'auto', fontSize: '9px', fontFamily: 'monospace' }}>
           {(interruptLog || []).length === 0 && <div style={emptyStyle}>暂无</div>}
-          {(interruptLog || []).slice(-15).reverse().map((e, i) => {
-            const c = { SCHEDULE:'#8b5cf6', PREEMPT:CYBER.magenta, TIMEOUT:CYBER.yellow, ARRIVAL:CYBER.green, BLOCK:CYBER.red, TERMINATED:'#666', SUSPEND:CYBER.red, RESUME:CYBER.green, KILL:CYBER.red }[e.type] || CYBER.textDim
+          {(interruptLog || []).slice(-50).reverse().map((e, i) => {
+            const c = {
+              SCHEDULE: '#8b5cf6', PREEMPT: CYBER.magenta, TIMEOUT: CYBER.yellow,
+              ARRIVAL: CYBER.green, BLOCK: CYBER.red, TERMINATED: '#666',
+              SUSPEND: CYBER.red, RESUME: CYBER.green, KILL: CYBER.red,
+              WAKEUP: CYBER.green, IPC: CYBER.cyan, AGING: '#eab308',
+              DEVICE: '#06b6d4',
+            }[e.type] || CYBER.textDim
             return (
-              <div key={i} style={{ display: 'flex', gap: '4px', padding: '1px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                <span style={{ color: '#555', minWidth: '22px' }}>T{e.tick}</span>
-                <span style={{ color: c, minWidth: '60px', fontWeight: 600 }}>{e.type}</span>
+              <div key={i} style={{ display: 'flex', gap: '4px', padding: '2px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                <span style={{ color: '#555', minWidth: '28px' }}>T{e.tick}</span>
+                <span style={{ color: c, minWidth: '70px', fontWeight: 600 }}>{e.type}</span>
                 <span style={{ color: CYBER.text, flex: 1 }}>{e.description}</span>
               </div>
             )

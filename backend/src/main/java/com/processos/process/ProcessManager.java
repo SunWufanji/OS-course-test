@@ -136,8 +136,26 @@ public class ProcessManager {
         // 分配内存
         boolean memOk = hardwarePool.allocateMemory(app.getMemoryRequired(), pid, displayName);
         if (!memOk) {
-            eventService.error("MEMORY_MGR", "启动失败：" + app.getName() + "，内存不足");
-            return null;
+            // 内存不足：创建 PCB 进阻塞队列等待内存释放
+            eventService.warning("MEMORY_MGR", "内存不足，" + displayName + " (PID:" + pid + ") 进入等待队列");
+            ProcessControlBlock waitPcb = new ProcessControlBlock(pid, displayName, 0, app.getPriority(), 0, color);
+            waitPcb.setState(ProcessState.BLOCKED);
+            waitPcb.setBlockedReason("等待内存(" + app.getMemoryRequired() + "MB)");
+            waitPcb.setAppType(app.name());
+            waitPcb.setIcon(app.getIcon());
+            waitPcb.setMemoryUsage(app.getMemoryRequired());
+            waitPcb.setCurrentMemoryUsage(0);
+            waitPcb.setDiskRead(app.getDiskRead());
+            waitPcb.setDiskWrite(app.getDiskWrite());
+            waitPcb.setNetworkSpeed(app.getNetworkSpeed());
+            waitPcb.setParentPid(-1);
+            waitPcb.setCoreIndex(-1);
+            waitPcb.setCodeSegment(app.getCodeSegment());
+            waitPcb.resetContext();
+            blockedQueue.add(waitPcb);
+            processTable.add(waitPcb);
+            addInterruptLog("BLOCK", displayName + " (PID:" + pid + ") 内存不足(" + app.getMemoryRequired() + "MB)，进阻塞队列等待");
+            return new Object[]{"WAITING_MEMORY", pid};
         }
 
         ProcessControlBlock pcb = new ProcessControlBlock(pid, displayName, 0, app.getPriority(), 0, color);
@@ -392,6 +410,31 @@ public class ProcessManager {
         runningProcess = null;
         currentQueueLevel = -1;
         timeUsed = 0;
+        // 内存释放后尝试唤醒等待内存的进程
+        tryWakeupMemoryWaiters();
+    }
+
+    /** 内存释放后，按内存需求从小到大尝试唤醒等待内存的进程 */
+    private void tryWakeupMemoryWaiters() {
+        List<ProcessControlBlock> waiters = blockedQueue.stream()
+            .filter(p -> p.getBlockedReason() != null && p.getBlockedReason().startsWith("等待内存"))
+            .sorted(Comparator.comparingInt(ProcessControlBlock::getMemoryUsage))
+            .toList();
+        for (ProcessControlBlock waiter : waiters) {
+            boolean memOk = hardwarePool.allocateMemory(waiter.getMemoryUsage(), waiter.getPid(), waiter.getName());
+            if (memOk) {
+                waiter.setCurrentMemoryUsage(waiter.getMemoryUsage());
+                waiter.setCoreIndex(hardwarePool.allocateCpuCore(waiter.getPid()));
+                blockedQueue.remove(waiter);
+                waiter.setState(ProcessState.READY);
+                waiter.setBlockedReason(null);
+                int targetQueue = getQueueForPriority(waiter.getPriority());
+                addToQueue(waiter, targetQueue);
+                queueEntryTime.put(waiter.getPid(), clockTick);
+                addInterruptLog("WAKEUP", waiter.getName() + " (PID:" + waiter.getPid() + ") 内存就绪，唤醒进Q" + targetQueue);
+                eventService.info("MEMORY_MGR", waiter.getName() + " 获得内存被唤醒", waiter.getPid(), waiter.getName());
+            }
+        }
     }
 
     /** 将 blockedQueue 中指定 PID 的进程唤醒回 Q1 */
@@ -444,6 +487,7 @@ public class ProcessManager {
         ioManager.releaseExclusiveDevice("USB_DISK", pid);
         pcb.setState(ProcessState.TERMINATED);
         addInterruptLog("KILL", pcb.getName() + " (PID:" + pid + ") 被终止");
+        tryWakeupMemoryWaiters();
         return true;
     }
 

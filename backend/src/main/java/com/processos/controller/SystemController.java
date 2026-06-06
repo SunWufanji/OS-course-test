@@ -67,7 +67,19 @@ public class SystemController {
             return result;
         }
 
-        int pid = (int) launchResult[0];
+        // launchResult[0] 可能是 Integer(pid), -1(已运行), 或 String("WAITING_MEMORY")
+        Object first = launchResult[0];
+        if ("WAITING_MEMORY".equals(first)) {
+            int waitPid = (int) launchResult[1];
+            result.put("success", true);
+            result.put("waitingMemory", true);
+            result.put("pid", waitPid);
+            result.put("message", app.getName() + " 内存不足，已进入阻塞队列等待（PID:" + waitPid + "）");
+            result.put("process", processManager.findProcess(waitPid));
+            return result;
+        }
+
+        int pid = (int) first;
         if (pid == -1) {
             // 已运行，返回现有进程PID供前端激活窗口
             int existingPid = (int) launchResult[1];
