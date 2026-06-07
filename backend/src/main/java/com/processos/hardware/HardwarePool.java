@@ -13,10 +13,10 @@ import java.util.Random;
 @Component
 public class HardwarePool {
 
-    // ==================== CPU 配置 ====================
-    private final int cpuCores = 8;                      // CPU 核心数
-    private final double[] coreUsage = new double[8];    // 每个核心的使用率 (0-100)
-    private final int[] corePid = new int[8];            // 每个核心上运行的进程 PID
+    // ==================== CPU 配置（单核） ====================
+    private final int cpuCores = 1;                      // CPU 核心数（单核）
+    private final double[] coreUsage = new double[1];    // 每个核心的使用率 (0-100)
+    private final int[] corePid = new int[1];            // 每个核心上运行的进程 PID
 
     // ==================== 内存配置 ====================
     private final int totalMemory = 16384;               // 总内存 16GB
@@ -206,7 +206,7 @@ public class HardwarePool {
             usedMemory,
             memoryBlocks.stream()
                 .filter(MemoryBlock::isAllocated)
-                .map(b -> new MemoryAllocation(b.getPid(), b.getProcessName(), b.getSize()))
+                .map(b -> new MemoryAllocation(b.getPid(), b.getProcessName(), b.getSize(), b.getStartAddress()))
                 .toList(),
             diskReadSpeed,
             diskWriteSpeed,
@@ -235,5 +235,5 @@ public class HardwarePool {
     /**
      * 内存分配记录
      */
-    public record MemoryAllocation(int pid, String processName, int size) {}
+    public record MemoryAllocation(int pid, String processName, int size, int startAddress) {}
 }

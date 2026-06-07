@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 系统管理 API - 沙盒模式
+ * 系统管理 API - 沙盒模式，沙盒核心：启动/结束/挂起/恢复进程，暂停单步，系统状态
  */
 @RestController
 @RequestMapping("/api")

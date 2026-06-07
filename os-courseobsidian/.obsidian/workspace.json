@@ -8,17 +8,17 @@
         "type": "tabs",
         "children": [
           {
-            "id": "8583886b1cda5407",
+            "id": "0d1332a4d43080ad",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "07-验收与答辩.md",
+                "file": "代码解释/service/_index_.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "07-验收与答辩"
+              "title": "_index_"
             }
           }
         ]
@@ -78,7 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 200
   },
   "right": {
     "id": "3d0c05c13b821cfa",
@@ -183,15 +183,44 @@
       "bases:新建数据库": false
     }
   },
-  "active": "8583886b1cda5407",
+  "active": "0d1332a4d43080ad",
   "lastOpenFiles": [
-    "06-界面说明.md",
-    "05-技术架构.md",
-    "04-快速开始.md",
-    "03-功能清单.md",
-    "02-文件结构.md",
-    "01-项目概览.md",
-    "07-验收与答辩.md",
+    "代码解释/scheduler/_index_.md",
+    "代码解释/repository/_index_.md",
+    "代码解释/process/_index_.md",
+    "代码解释/model/_index_.md",
+    "代码解释/hardware/_index_.md",
+    "代码解释/controller/_index_.md",
+    "代码解释/controller/IoController.md",
+    "代码解释/service/_index_.md",
+    "代码解释/hardware/MemoryBlock.md",
+    "代码解释/hardware/IoManager.md",
+    "代码解释/hardware/InstructionResult.md",
+    "代码解释/hardware/HardwarePool.md",
+    "代码解释/hardware/DiskRequest.md",
+    "代码解释/hardware/CpuCore.md",
+    "代码解释/hardware/CodeSegmentGenerator.md",
+    "代码解释/model/SystemEvent.md",
+    "代码解释/model/SimulatedApp.md",
+    "代码解释/model/ScenarioConfig.md",
+    "代码解释/model/ProcessState.md",
+    "代码解释/model/ProcessControlBlock.md",
+    "代码解释/model/PerformanceMetrics.md",
+    "代码解释/model/IpcMessage（没用到）.md",
+    "代码解释/model/ExecutionLog.md",
+    "代码解释/process/ProcessManager.md",
+    "代码解释/ProcessOsApplication.md",
+    "代码解释/sync/MessageQueue.md",
+    "代码解释/sync",
+    "代码解释/service/ProcessService.md.tmp.312492.56da62f67a2a",
+    "代码解释/service/IpcManager.md.tmp.312492.2214dbe6ced7",
+    "代码解释/service",
+    "代码解释/scheduler/VectorScheduler.md.tmp.312492.7b51332294c8",
+    "代码解释/scheduler/PreemptivePriorityScheduler.md.tmp.312492.4985986149f3",
+    "代码解释/scheduler",
+    "代码解释/repository",
+    "代码解释/process/_index_.md.tmp.312492.81cf3b438f19",
+    "代码解释/process/ProcessManager.md.tmp.312492.340c5269037d",
     "Pasted image 20260604163235.png"
   ]
 }

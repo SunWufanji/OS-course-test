@@ -8,7 +8,7 @@ public enum SimulatedApp {
     // 游戏类（单实例）— 优先级高，指令多（复杂程序）
     CSGO("CS:GO", "🎮", 25, 4096, 100, 200, true, 1, 30),
     PUBG("绝地求生", "🎯", 30, 6144, 150, 300, true, 1, 35),
-    MINECRAFT("我的世界", "⛏️", 15, 2048, 50, 100, true, 2, 34),
+    MINECRAFT("我的世界", "⛏️", 15, 14000, 50, 100, true, 2, 34),
 
     // 浏览器 — 优先级中等
     CHROME("Chrome", "🌐", 15, 2048, 50, 50, false, 3, 9),
@@ -34,9 +34,9 @@ public enum SimulatedApp {
 
     // ===== IPC 演示 =====
     // 进程A：发送请求后等待B回复（RECV阻塞）
-    IPC_SENDER("IPC-发送方", "📤", 8, 256, 0, 0, true, 2, 12),
+    IPC_SENDER("IPC-发送方", "📤", 8, 256, 0, 0, true, 2, 6),
     // 进程B：收到A的请求后执行并回复（SEND唤醒A）
-    IPC_RECEIVER("IPC-接收方", "📥", 6, 256, 0, 0, true, 2, 12),
+    IPC_RECEIVER("IPC-接收方", "📥", 6, 256, 0, 0, true, 2, 6),
 
     // ===== 打印机互斥演示 =====
     // 进程C：先抢占打印机，挂起也不释放，全部完成后才释放
@@ -98,36 +98,26 @@ public enum SimulatedApp {
     public String[] getCodeSegment() {
         switch (this) {
             case IPC_SENDER -> {
-                // A：准备请求 → RECV阻塞等B回复 → 收到回复后继续处理 → 结束
+                // A：立即发消息 → 等B回复（RECV阻塞）→ 收到后继续 → 结束
+                // SEND 放第1条，确保 A 一上CPU就发出去，不会因时间片问题导致死锁
                 return new String[]{
-                    "MOV AX, 1        ;初始化请求参数",
-                    "MOV BX, 100      ;设置请求数据",
-                    "ADD AX, BX       ;计算请求内容",
-                    "SEND IPC_RECEIVER ;向接收方发送请求消息",
-                    "RECV             ;等待接收方回复（阻塞）",
+                    "SEND IPC_RECEIVER ;立即向接收方发送请求",
+                    "RECV             ;等待接收方回复（阻塞直到B回复）",
                     "MOV CX, AX       ;保存回复到CX",
                     "ADD CX, 1        ;处理回复数据",
                     "MOV DX, CX       ;结果写入DX",
-                    "PUSH DX          ;保存最终结果",
-                    "MOV AX, 0        ;清零",
-                    "POP BX           ;恢复结果",
                     "HALT             ;完成"
                 };
             }
             case IPC_RECEIVER -> {
-                // B：准备 → 接收A的请求 → 处理 → SEND回复唤醒A → 继续自己的工作 → 结束
+                // B：等A的消息（RECV阻塞）→ 处理 → 立即回复A（唤醒A）→ 结束
+                // RECV 放第1条，B 一上CPU就等消息，收到后立即 SEND 回复
                 return new String[]{
-                    "MOV AX, 0        ;初始化",
+                    "RECV             ;等待发送方的请求（阻塞直到A发消息）",
                     "MOV BX, 200      ;准备响应数据",
                     "ADD BX, 50       ;计算响应值",
-                    "RECV             ;接收来自发送方的消息",
-                    "MOV CX, BX       ;读取请求内容",
-                    "ADD CX, AX       ;处理请求",
-                    "SEND IPC_SENDER  ;回复发送方（唤醒A）",
-                    "MOV DX, CX       ;继续自己的工作",
-                    "ADD DX, 1        ;后续计算",
-                    "PUSH DX          ;保存结果",
-                    "POP AX           ;恢复",
+                    "SEND IPC_SENDER  ;立即回复发送方（唤醒A）",
+                    "MOV DX, BX       ;继续自己的工作",
                     "HALT             ;完成"
                 };
             }

@@ -6,20 +6,11 @@ const DOCK_APPS = [
   { name: '系统日志', icon: '📋', action: 'systemLog' },
   { name: '内核算法实验室', icon: '🧪', action: 'kernelLab' },
   { name: '同步互斥实验室', icon: '🔒', action: 'syncLab' },
-  { name: 'I/O设备管理', icon: '🔧', action: 'ioDevice' },
   { name: 'CS:GO', icon: '/picture/CS2.jpg', app: 'CS:GO', isImage: true },
-  { name: '绝地求生', icon: '🎯', app: '绝地求生' },
-  { name: '我的世界', icon: '⛏️', app: '我的世界' },
   { name: 'Chrome', icon: '🌐', app: 'Chrome' },
-  { name: 'Firefox', icon: '🦊', app: 'Firefox' },
   { name: 'VSCode', icon: '💻', app: 'VSCode' },
-  { name: '终端', icon: '⬛', app: '终端' },
   { name: '记事本', icon: '📝', app: '记事本' },
   { name: 'Word', icon: '📄', app: 'Word' },
-  { name: 'Excel', icon: '📊', app: 'Excel' },
-  { name: '下载工具', icon: '⬇️', app: '下载工具' },
-  { name: '杀毒软件', icon: '🛡️', app: '杀毒软件' },
-  { name: '系统更新', icon: '🔄', app: '系统更新' },
 ]
 
 function TaskBar({ windows, activeWindowId, systemStatus, onActivateWindow, onOpenTaskManager, onOpenKernelLab, onOpenSystemLog, onLaunchApp, onReset, onToggleControlCenter, onToggleLauncher, toggleWindow, hasMaximized }) {
